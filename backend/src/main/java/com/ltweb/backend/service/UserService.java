@@ -62,4 +62,10 @@ public class UserService {
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
+    public void deleteUser(String id){
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        userRepository.delete(user);
+    }
+
 }

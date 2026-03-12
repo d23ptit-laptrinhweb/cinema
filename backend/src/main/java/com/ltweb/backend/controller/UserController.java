@@ -2,6 +2,7 @@ package com.ltweb.backend.controller;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +29,7 @@ public class UserController {
     @PostMapping()
     public ApiResponse<UserResponse> createUser(@RequestBody @Valid CreateUserRequest createUserRequest){
         ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setMessage("Register successfully!");
         apiResponse.setResult(userService.createUser(createUserRequest));
         return apiResponse;
     }
@@ -42,8 +44,16 @@ public class UserController {
     @PutMapping("/{id}")
     public ApiResponse<UserResponse> updateUser(@PathVariable("id") String id,@RequestBody @Valid UpdateUserRequest updateUserRequest){
         ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setMessage("User has been updated successfully!");
         apiResponse.setResult(userService.updateUser(id, updateUserRequest));
         return apiResponse;
     }
 
+    @DeleteMapping("/{id}")
+    public ApiResponse<String> deleteUser(@PathVariable("id") String id){
+        ApiResponse<String> apiResponse = new ApiResponse<>();
+        userService.deleteUser(id);
+        apiResponse.setMessage("User has been deleted successfully!");
+        return apiResponse;
+    }
 }
