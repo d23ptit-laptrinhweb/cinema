@@ -1,26 +1,22 @@
-package com.ltweb.backend.dto.response;
-
+package com.ltweb.backend.dto.request;
 
 import java.util.Date;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResponse {
-    private String id;
+public class UpdateUserRequest {
+    private String password;
     private String fullName;
-    private String username;
-    private String email;
-    private String phoneNumber;
-    private String role;
     private Date dob;
+    private String phoneNumber;
     private String gender;
+    private String email;
+    private String role;
 }

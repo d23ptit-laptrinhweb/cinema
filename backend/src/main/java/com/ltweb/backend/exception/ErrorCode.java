@@ -18,7 +18,7 @@ public enum ErrorCode {
     
     // User Management
     USER_EXISTED(400, "User already exists", HttpStatus.BAD_REQUEST),
-    USER_NOT_FOUND(400, "Email does not exist", HttpStatus.BAD_REQUEST),
+    USER_NOT_FOUND(400, "User does not exist", HttpStatus.BAD_REQUEST),
 
     //Sign up
     EMAIL_EXISTED(400, "Email already exists", HttpStatus.BAD_REQUEST),
