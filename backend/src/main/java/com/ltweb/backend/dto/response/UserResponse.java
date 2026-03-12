@@ -1,7 +1,7 @@
 package com.ltweb.backend.dto.response;
 
 
-import java.util.Date;
+import java.time.LocalDate;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +21,6 @@ public class UserResponse {
     private String email;
     private String phoneNumber;
     private String role;
-    private Date dob;
+    private LocalDate dob;
     private String gender;
 }

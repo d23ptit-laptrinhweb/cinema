@@ -1,6 +1,7 @@
 package com.ltweb.backend.model;
 
-import java.util.Date;
+import java.time.LocalDate;
+
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,7 +31,7 @@ public class User {
     @Column(unique = true)
     private String phoneNumber;
 
-    private Date dob;
+    private LocalDate dob;
 
     private String gender;
 
