@@ -3,7 +3,7 @@ package com.ltweb.backend.exception;
 import java.util.Date;
 import java.util.List;
 
-// import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -90,14 +90,14 @@ public class GlobalExceptionHandler {
     }
 
     // 5. Xử lý Database Constraint Violations
-    // @ExceptionHandler(DataIntegrityViolationException.class)
-    // public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
-    //         DataIntegrityViolationException exception, WebRequest request) {
-    //    
-    //     ErrorResponse response = buildErrorCodeResponse(
-    //             ErrorCode.DATA_INTEGRITY_VIOLATION, request);
-    //     return ResponseEntity.badRequest().body(response);
-    // }
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
+             DataIntegrityViolationException exception, WebRequest request) {
+        
+         ErrorResponse response = buildErrorCodeResponse(
+                 ErrorCode.DATA_INTEGRITY_VIOLATION, request);
+         return ResponseEntity.badRequest().body(response);
+     }
 
     // 6. Catch-all cho các exceptions không được xử lý
     @ExceptionHandler(Exception.class)

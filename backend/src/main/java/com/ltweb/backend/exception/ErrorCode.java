@@ -21,9 +21,7 @@ public enum ErrorCode {
     USER_NOT_FOUND(400, "User does not exist", HttpStatus.BAD_REQUEST),
 
     //Sign up
-    EMAIL_EXISTED(400, "Email already exists", HttpStatus.BAD_REQUEST),
-    PHONENUMBER_EXISTED(400, "Phone number already exists", HttpStatus.BAD_REQUEST),
-    USERNAME_EXISTED(400, "Username already exists", HttpStatus.BAD_REQUEST),
+    DATA_INTEGRITY_VIOLATION(400, "Username or email already existed!", HttpStatus.BAD_REQUEST)
     ;
     private final int code;
     private final String message;
