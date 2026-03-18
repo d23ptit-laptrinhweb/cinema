@@ -4,9 +4,14 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.ltweb.backend.enums.AgeRating;
+import com.ltweb.backend.enums.FilmStatus;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -41,7 +46,9 @@ public class Film {
 
     private Integer durationMinutes;
 
-    private String ageRating;
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private AgeRating ageRating = AgeRating.P;
 
     private String language;
 
@@ -51,8 +58,9 @@ public class Film {
 
     private LocalDate endDate;
 
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String status = "UPCOMING";
+    private FilmStatus status = FilmStatus.UPCOMING;
 
     @OneToMany(mappedBy = "film", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

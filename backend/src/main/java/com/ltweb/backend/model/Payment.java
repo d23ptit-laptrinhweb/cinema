@@ -3,7 +3,12 @@ package com.ltweb.backend.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.ltweb.backend.enums.PaymentMethod;
+import com.ltweb.backend.enums.PaymentStatus;
+
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -33,12 +38,14 @@ public class Payment {
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
 
-    private String paymentMethod;
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
 
     private BigDecimal amount;
 
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String paymentStatus = "PENDING";
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
     private String providerTxnId;
 

@@ -1,11 +1,16 @@
 package com.ltweb.backend.model;
 
 import java.util.List;
+
+import com.ltweb.backend.enums.BranchStatus;
+
 import java.util.ArrayList;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -41,8 +46,9 @@ public class Branch {
 
     private String phone;
 
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String status = "ACTIVE";
+    private BranchStatus status = BranchStatus.ACTIVE;
 
     @OneToMany(mappedBy = "branch", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

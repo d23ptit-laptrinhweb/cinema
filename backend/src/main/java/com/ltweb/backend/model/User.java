@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ltweb.backend.enums.UserRole;
+import com.ltweb.backend.enums.UserStatus;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,10 +40,13 @@ public class User {
 
     private String gender;
 
-    private String role;
-
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String status = "ACTIVE";
+    private UserRole role = UserRole.USER;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
 
     private LocalDateTime createdAt;
 

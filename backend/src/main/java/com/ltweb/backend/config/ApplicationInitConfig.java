@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 
+import com.ltweb.backend.enums.UserRole;
 import com.ltweb.backend.model.User;
 import com.ltweb.backend.repository.UserRepository;
 
@@ -24,7 +25,7 @@ public class ApplicationInitConfig {
                 User user = User.builder()
                     .username("admin")
                     .password("admin@123")
-                    .role("ADMIN")
+                    .role(UserRole.ADMIN)
                     .build();
 
                 userRepository.save(user);

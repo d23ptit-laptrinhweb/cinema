@@ -1,6 +1,8 @@
 package com.ltweb.backend.dto.request;
 
-import java.util.Date;
+import java.time.LocalDate;
+
+import com.ltweb.backend.enums.UserRole;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,9 +16,9 @@ import lombok.Setter;
 public class UpdateUserRequest {
     private String password;
     private String fullName;
-    private Date dob;
+    private LocalDate dob;
     private String phoneNumber;
     private String gender;
     private String email;
-    private String role;
+    private UserRole role;
 }

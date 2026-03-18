@@ -3,6 +3,7 @@ package com.ltweb.backend.service;
 import com.ltweb.backend.dto.request.CreateUserRequest;
 import com.ltweb.backend.dto.request.UpdateUserRequest;
 import com.ltweb.backend.dto.response.UserResponse;
+import com.ltweb.backend.enums.UserRole;
 import com.ltweb.backend.exception.AppException;
 import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.mapper.UserMapper;
@@ -24,7 +25,7 @@ public class UserService {
 
     public UserResponse createUser(CreateUserRequest createUserRequest) {
         User user = userMapper.toUser(createUserRequest);
-        user.setRole("USER");
+        user.setRole(UserRole.USER);
 
         User savedUser = userRepository.save(user);
         return userMapper.toUserResponse(savedUser);  

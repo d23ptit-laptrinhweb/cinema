@@ -2,8 +2,12 @@ package com.ltweb.backend.model;
 
 import java.math.BigDecimal;
 
+import com.ltweb.backend.enums.TicketStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -49,8 +53,9 @@ public class Ticket {
 	@Column(nullable = false)
 	private BigDecimal price;
 
+	@Enumerated(EnumType.STRING)
 	@Builder.Default
-	private String ticketStatus = "BOOKED";
+	private TicketStatus ticketStatus = TicketStatus.BOOKED;
 
 	private String qrCode;
 }
