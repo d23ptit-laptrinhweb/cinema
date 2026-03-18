@@ -1,6 +1,9 @@
 package com.ltweb.backend.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 
 import jakarta.persistence.*;
@@ -36,4 +39,26 @@ public class User {
     private String gender;
 
     private String role;
+
+    @Builder.Default
+    private String status = "ACTIVE";
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Booking> bookings = new ArrayList<>();
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
