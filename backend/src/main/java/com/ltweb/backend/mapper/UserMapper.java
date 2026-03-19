@@ -3,7 +3,8 @@ package com.ltweb.backend.mapper;
 import com.ltweb.backend.dto.request.CreateUserRequest;
 import com.ltweb.backend.dto.request.UpdateUserRequest;
 import com.ltweb.backend.dto.response.UserResponse;
-import com.ltweb.backend.model.User;
+import com.ltweb.backend.entity.User;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

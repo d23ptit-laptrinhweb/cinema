@@ -3,7 +3,7 @@ package com.ltweb.backend.service;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateBranchRequest;
-import com.ltweb.backend.model.Branch;
+import com.ltweb.backend.entity.Branch;
 import com.ltweb.backend.repository.BranchRepository;
 
 import lombok.RequiredArgsConstructor;

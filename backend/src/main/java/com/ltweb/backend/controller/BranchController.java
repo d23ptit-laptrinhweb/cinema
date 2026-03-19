@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ltweb.backend.dto.request.CreateBranchRequest;
 import com.ltweb.backend.dto.response.ApiResponse;
-import com.ltweb.backend.model.Branch;
+import com.ltweb.backend.entity.Branch;
 import com.ltweb.backend.service.BranchService;
 
 import jakarta.validation.Valid;

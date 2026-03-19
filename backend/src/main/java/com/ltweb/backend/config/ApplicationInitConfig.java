@@ -4,9 +4,8 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-
+import com.ltweb.backend.entity.User;
 import com.ltweb.backend.enums.UserRole;
-import com.ltweb.backend.model.User;
 import com.ltweb.backend.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;

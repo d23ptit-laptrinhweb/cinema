@@ -1,4 +1,4 @@
-package com.ltweb.backend.model;
+package com.ltweb.backend.entity;
 
 import java.util.ArrayList;
 import java.util.List;
