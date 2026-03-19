@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.ltweb.backend.enums.UserRole;
 import com.ltweb.backend.enums.UserStatus;
+import com.ltweb.backend.enums.Gender;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,15 +39,14 @@ public class User {
 
     private LocalDate dob;
 
-    private String gender;
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private UserRole role = UserRole.USER;
+    private UserRole role;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private UserStatus status = UserStatus.ACTIVE;
+    private UserStatus status;
 
     private LocalDateTime createdAt;
 
