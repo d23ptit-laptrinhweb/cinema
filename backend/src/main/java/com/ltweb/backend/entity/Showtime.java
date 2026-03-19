@@ -51,8 +51,7 @@ public class Showtime {
     private BigDecimal basePrice;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ShowtimeStatus status = ShowtimeStatus.OPEN;
+    private ShowtimeStatus status;
 
     @OneToMany(mappedBy = "showtime", cascade = CascadeType.ALL)
     @Builder.Default

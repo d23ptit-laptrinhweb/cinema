@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ltweb.backend.enums.RoomStatus;
+import com.ltweb.backend.enums.RoomType;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -44,14 +45,14 @@ public class Room {
 
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String roomType = "2D";
+    private RoomType roomType = RoomType.TWO_D;
 
     private Integer seatCapacity;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private RoomStatus status = RoomStatus.ACTIVE;
+    private RoomStatus status;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

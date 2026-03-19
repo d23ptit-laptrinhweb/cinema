@@ -51,11 +51,9 @@ public class Seat {
     private Integer seatNumber;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private SeatType seatType = SeatType.STANDARD;
+    private SeatType seatType;
 
-    @Builder.Default
-    private Boolean isActive = true;
+    private Boolean isActive;
 
     @OneToMany(mappedBy = "seat", cascade = CascadeType.ALL)
     @Builder.Default

@@ -47,8 +47,7 @@ public class Film {
     private Integer durationMinutes;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private AgeRating ageRating = AgeRating.P;
+    private AgeRating ageRating;
 
     private String language;
 
@@ -59,8 +58,7 @@ public class Film {
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private FilmStatus status = FilmStatus.UPCOMING;
+    private FilmStatus status;
 
     @OneToMany(mappedBy = "film", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

@@ -54,8 +54,7 @@ public class Ticket {
 	private BigDecimal price;
 
 	@Enumerated(EnumType.STRING)
-	@Builder.Default
-	private TicketStatus ticketStatus = TicketStatus.BOOKED;
+	private TicketStatus ticketStatus;
 
 	private String qrCode;
 }

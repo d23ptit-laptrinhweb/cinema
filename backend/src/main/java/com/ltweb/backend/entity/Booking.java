@@ -54,8 +54,7 @@ public class Booking {
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private BookingStatus status = BookingStatus.PENDING;
+    private BookingStatus status;
 
     private LocalDateTime expiresAt;
 

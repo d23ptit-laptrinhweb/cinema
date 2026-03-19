@@ -47,8 +47,7 @@ public class Branch {
     private String phone;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private BranchStatus status = BranchStatus.ACTIVE;
+    private BranchStatus status;
 
     @OneToMany(mappedBy = "branch", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
