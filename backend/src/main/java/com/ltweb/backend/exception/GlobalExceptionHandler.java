@@ -6,6 +6,8 @@ import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import com.ltweb.backend.dto.response.ErrorResponse;
@@ -54,8 +56,8 @@ public class GlobalExceptionHandler {
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(new Date())
-                .code(HttpStatus.BAD_REQUEST.value())
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .code(ErrorCode.VALIDATION_ERROR.getCode())
+                .error(ErrorCode.VALIDATION_ERROR.getStatus().getReasonPhrase())
                 .message(errors.size() > 1 ? errors.toString() : errors.get(0))
                 .path(request.getDescription(false).replace("uri=", ""))
                 .build();
@@ -64,24 +66,34 @@ public class GlobalExceptionHandler {
     }
 
     // 3. Xử lý Authentication Errors
-    // @ExceptionHandler(BadCredentialsException.class)
-    // public ResponseEntity<ErrorResponse> handleBadCredentialsException(
-    //         BadCredentialsException exception, WebRequest request) {
-        
-    //     log.error("Authentication failed: {}", exception.getMessage());
-    //     ErrorResponse response = buildErrorCodeResponse(ErrorCode.UNAUTHORIZED, request);
-    //     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-    // }
+     @ExceptionHandler(AuthenticationException.class)
+     public ResponseEntity<ErrorResponse> handleAuthenticationException(
+             AuthenticationException exception, WebRequest request) {
 
-    // 4. Xử lý Missing Headers/Cookies
+         log.error("Authentication failed: {}", exception.getMessage());
+         ErrorResponse response = buildErrorCodeResponse(ErrorCode.LOGIN_FAILED, request);
+         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+     }
+
+    // 4. Xử lý Authorization Errors
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+            AccessDeniedException exception, WebRequest request) {
+
+        log.error("Access denied: {}", exception.getMessage());
+        ErrorResponse response = buildErrorCodeResponse(ErrorCode.ACCESS_DENIED, request);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    // 5. Xử lý Missing Headers/Cookies
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseEntity<ErrorResponse> handleMissingRequestHeaderException(
             MissingRequestHeaderException exception, WebRequest request) {
 
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(new Date())
-                .code(HttpStatus.BAD_REQUEST.value())
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .code(ErrorCode.MISSING_REQUEST_HEADER.getCode())
+                .error(ErrorCode.MISSING_REQUEST_HEADER.getStatus().getReasonPhrase())
                 .message("Required header '" + exception.getHeaderName() + "' is missing")
                 .path(request.getDescription(false).replace("uri=", ""))
                 .build();
@@ -89,21 +101,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    // 5. Xử lý Database Constraint Violations
+    // 6. Xử lý Database Constraint Violations
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
              DataIntegrityViolationException exception, WebRequest request) {
-        
+
          ErrorResponse response = buildErrorCodeResponse(
                  ErrorCode.DATA_INTEGRITY_VIOLATION, request);
          return ResponseEntity.badRequest().body(response);
      }
 
-    // 6. Catch-all cho các exceptions không được xử lý
+    // 7. Catch-all cho các exceptions không được xử lý
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAllExceptions(
             Exception ex, WebRequest request) {
-        
+
         log.error("Unexpected exception occurred: ", ex);
         ErrorResponse response = buildErrorCodeResponse(ErrorCode.INTERNAL_ERROR, request);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

@@ -13,7 +13,15 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 server:
   port: 8080
   servlet:
     context-path: /api
+
+jwt:
+  secret-key: 1fa10329547167709d24b3287b742dd287233b6bf4d36604e924dba849d05cf9b6b1d69d1f2493f1b26c5c28fd8e9366187decd7be4c4c90585235b7a5d79338

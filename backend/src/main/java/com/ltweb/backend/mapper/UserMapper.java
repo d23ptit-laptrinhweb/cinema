@@ -17,6 +17,7 @@ public interface UserMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "bookings", ignore = true)
+    @Mapping(target = "password", ignore = true)
     User toUser(CreateUserRequest request);
 
     @Mapping(target = "id", ignore = true)
@@ -25,6 +26,8 @@ public interface UserMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "bookings", ignore = true)
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "authorities", ignore = true)
     void updateUser(@MappingTarget User user, UpdateUserRequest request);
 
     UserResponse toUserResponse(User user);

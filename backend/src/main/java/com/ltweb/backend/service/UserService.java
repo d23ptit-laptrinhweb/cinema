@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,24 +25,25 @@ import org.springframework.stereotype.Service;
 public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     public UserResponse createUser(CreateUserRequest createUserRequest) {
         User user = userMapper.toUser(createUserRequest);
         user.setRole(UserRole.USER);
         user.setStatus(UserStatus.ACTIVE);
-
+        user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
         User savedUser = userRepository.save(user);
         return userMapper.toUserResponse(savedUser);  
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserResponse> getAllUser(){
         return userRepository.findAll().stream()
-            .map(user -> {UserResponse userResponse = userMapper.toUserResponse(user);
-                return userResponse;
-            })
+            .map(userMapper::toUserResponse)
             .toList();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse updateUser(String id, UpdateUserRequest updateUserRequest){
         User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
@@ -48,6 +51,7 @@ public class UserService {
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(String id){
         User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
