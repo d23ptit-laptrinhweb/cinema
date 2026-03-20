@@ -1,6 +1,7 @@
 package com.ltweb.backend.controller;
 
 import com.ltweb.backend.dto.request.LoginRequest;
+import com.ltweb.backend.dto.request.RefreshTokenRequest;
 import com.ltweb.backend.dto.response.ApiResponse;
 import com.ltweb.backend.dto.response.LoginResponse;
 import com.ltweb.backend.service.AuthService;
@@ -30,6 +31,15 @@ public class AuthController {
         apiResponse.setCode(200);
         apiResponse.setMessage("Logout successfully");
         authService.logout(authHeader.replace("Bearer ", ""));
+        return apiResponse;
+    }
+
+    @PostMapping("/auth/refresh")
+    public ApiResponse<LoginResponse> refresh(@RequestBody RefreshTokenRequest refreshTokenRequest) {
+        ApiResponse<LoginResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Refresh token successfully");
+        apiResponse.setResult(authService.refresh(refreshTokenRequest.getRefreshToken()));
         return apiResponse;
     }
 }

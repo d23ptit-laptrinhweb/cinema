@@ -29,7 +29,7 @@ public class ApplicationInitConfig {
                     .build();
 
                 userRepository.save(user);
-                log.warn("Admin user created with default password. Please change it immediately.");
+                log.warn("Admin user has been created with default password \"admin@123\". Please change it immediately.");
             }
         };
     }

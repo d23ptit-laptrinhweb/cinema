@@ -128,6 +128,38 @@ public class JwtService {
         }
     }
 
+    public boolean verifyRefreshToken(String token){
+        SignedJWT signedJWT;
+        try {
+            signedJWT = SignedJWT.parse(token);
+        } catch (java.text.ParseException e) {
+            throw new AppException(ErrorCode.TOKEN_INVALID);
+        }
+
+        Date expirationTime;
+        String jwtId;
+        try {
+            expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+            jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+        } catch (java.text.ParseException e) {
+            throw new AppException(ErrorCode.TOKEN_INVALID);
+        }
+        if(expirationTime.before(new Date())) {
+            return false;
+        }
+
+        Optional<RedisToken> redisToken = redisTokenRepository.findById(jwtId);
+        if(redisToken.isEmpty()){
+            throw new AppException(ErrorCode.TOKEN_INVALID);
+        }
+        redisTokenRepository.deleteById(jwtId);
+        try {
+            return signedJWT.verify(new MACVerifier(secretKey));
+        } catch (JOSEException e) {
+            throw new AppException(ErrorCode.TOKEN_INVALID);
+        }
+    }
+
     public JwtInfo parseToken(String token) {
         SignedJWT signedJWT;
         try {
