@@ -13,9 +13,10 @@ import com.ltweb.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
 import java.util.Objects;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,10 +41,9 @@ public class UserService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    public List<UserResponse> getAllUser(){
-        return userRepository.findAll().stream()
-            .map(userMapper::toUserResponse)
-            .toList();
+    public Page<UserResponse> getAllUser(Pageable pageable){
+        return userRepository.findAll(pageable)
+            .map(userMapper::toUserResponse);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

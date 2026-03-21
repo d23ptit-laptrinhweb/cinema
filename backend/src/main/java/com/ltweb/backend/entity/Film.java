@@ -44,6 +44,8 @@ public class Film {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    private String thumbnailUrl;
+
     private Integer durationMinutes;
 
     @Enumerated(EnumType.STRING)

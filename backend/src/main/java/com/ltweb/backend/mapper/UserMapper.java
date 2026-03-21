@@ -26,6 +26,7 @@ public interface UserMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "bookings", ignore = true)
     @Mapping(target = "authorities", ignore = true)
+    @Mapping(target = "password", ignore = true)
     void updateUser(@MappingTarget User user, UpdateUserRequest request);
 
     UserResponse toUserResponse(User user);

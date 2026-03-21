@@ -35,32 +35,7 @@ public class JwtService {
 
         Date issueTime = new Date();
         Date expiredTime = Date.from(issueTime.toInstant().plus(30, ChronoUnit.MINUTES));
-        String jwtID = UUID.randomUUID().toString();
-
-        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getUsername())
-                .issueTime(issueTime)
-                .expirationTime(expiredTime)
-                .jwtID(jwtID)
-                .claim("role", user.getRole().name())
-                .build();
-
-        Payload payload = new Payload(claimsSet.toJSONObject());
-
-        JWSObject jwsObject = new JWSObject(header, payload);
-
-        try {
-            jwsObject.sign(new MACSigner(secretKey));
-        } catch (JOSEException e) {
-            throw new AppException(ErrorCode.TOKEN_SIGNING_FAILED);
-        }
-
-        String token = jwsObject.serialize();
-        return TokenPayload.builder()
-                .token(token)
-                .jwtId(jwtID)
-                .expiredTime(expiredTime)
-                .build();
+        return getTokenPayload(user, header, issueTime, expiredTime);
     }
 
     public TokenPayload generateRefreshToken(User user) {
@@ -68,6 +43,10 @@ public class JwtService {
 
         Date issueTime = new Date();
         Date expiredTime = Date.from(issueTime.toInstant().plus(30, ChronoUnit.DAYS));
+        return getTokenPayload(user, header, issueTime, expiredTime);
+    }
+
+    private TokenPayload getTokenPayload(User user, JWSHeader header, Date issueTime, Date expiredTime) {
         String jwtID = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()

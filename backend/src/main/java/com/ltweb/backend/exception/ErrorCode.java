@@ -25,6 +25,7 @@ public enum ErrorCode {
     // Request Validation
     VALIDATION_ERROR(400, "Request validation failed", HttpStatus.BAD_REQUEST),
     MISSING_REQUEST_HEADER(400, "Required request header is missing", HttpStatus.BAD_REQUEST),
+    TOO_MANY_REQUESTS(429, "Too many requests", HttpStatus.TOO_MANY_REQUESTS),
 
     //Sign up
     DATA_INTEGRITY_VIOLATION(400, "Username or email already existed!", HttpStatus.BAD_REQUEST)
