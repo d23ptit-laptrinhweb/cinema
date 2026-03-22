@@ -38,14 +38,15 @@ public class UserController {
 
     @GetMapping("/users")
     public ApiResponse<Page<UserResponse>> getAllUser(
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir){
         Sort sort = "desc".equalsIgnoreCase(sortDir)
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        int pageIndex = Math.max(page - 1, 0);
+        Pageable pageable = PageRequest.of(pageIndex, size, sort);
 
         ApiResponse<Page<UserResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setResult(userService.getAllUser(pageable));
