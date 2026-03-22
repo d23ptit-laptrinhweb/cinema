@@ -11,7 +11,7 @@ public class SeatResponse {
 
     private String seatId;
 
-    private String roomId;
+    private Long roomId;
 
     private String seatCode;
 

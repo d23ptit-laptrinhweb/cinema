@@ -36,10 +36,11 @@ import lombok.Setter;
 public class Film {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String film_id;
+    @Column(name = "film_id")
+    private String filmId;
 
-    @Column(nullable = false)
-    private String film_name;
+    @Column(nullable = false,name = "film_name")
+    private String filmName;
 
     @Column(columnDefinition = "TEXT")
     private String description;

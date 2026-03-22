@@ -2,10 +2,15 @@ package com.ltweb.backend.dto.request;
 
 import com.ltweb.backend.enums.SeatType;
 
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UpdateSeatRequest {
+    private String seatId;
 
     private String seatCode;
 
