@@ -20,6 +20,12 @@ public enum ErrorCode {
     USER_EXISTED(400, "User already exists", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(400, "User does not exist", HttpStatus.BAD_REQUEST),
 
+    // Branch Management
+    BRANCH_NOT_FOUND(400, "Branch does not exist", HttpStatus.BAD_REQUEST),
+
+    // Room Management
+    ROOM_NOT_FOUND(400, "Room does not exist", HttpStatus.BAD_REQUEST),
+
     //Sign up
     DATA_INTEGRITY_VIOLATION(400, "Username or email already existed!", HttpStatus.BAD_REQUEST)
     ;
