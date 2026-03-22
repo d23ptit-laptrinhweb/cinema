@@ -14,11 +14,11 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateUserRequest {
-    private String password;
     private String fullName;
     private LocalDate dob;
     private String phoneNumber;
     private String gender;
     private String email;
     private UserRole role;
+    private String status;
 }
