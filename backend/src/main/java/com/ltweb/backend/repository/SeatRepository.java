@@ -9,9 +9,9 @@ import com.ltweb.backend.entity.Seat;
 
 public interface SeatRepository extends JpaRepository<Seat, String> {
 
-    List<Seat> findByRoomId(String roomId);
+    List<Seat> findByRoomId(Long roomId);
 
-    Optional<Seat> findByRoomIdAndSeatCode(String roomId, String seatCode);
+    Optional<Seat> findByRoomIdAndSeatCode(Long roomId, String seatCode);
 
-    boolean existsByRoomIdAndSeatCode(String roomId, String seatCode);
+    boolean existsByRoomIdAndSeatCode(Long roomId, String seatCode);
 }

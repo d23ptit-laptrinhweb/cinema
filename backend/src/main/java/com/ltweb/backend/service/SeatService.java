@@ -1,4 +1,4 @@
-package com.ltweb.backend.service.impl;
+package com.ltweb.backend.service;
 
 import java.util.List;
 
@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import com.ltweb.backend.dto.request.CreateSeatRequest;
 import com.ltweb.backend.dto.request.UpdateSeatRequest;
 import com.ltweb.backend.dto.response.SeatResponse;
-import com.ltweb.backend.entity.Room;
 import com.ltweb.backend.entity.Seat;
 import com.ltweb.backend.repository.RoomRepository;
 import com.ltweb.backend.repository.SeatRepository;
@@ -26,18 +25,20 @@ public class SeatService {
 
     public SeatResponse createSeat(CreateSeatRequest request) {
 
-        roomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new RuntimeException("Room not found"));
+    var room = roomRepository.findById(request.getRoomId())
+        .orElseThrow(() -> new RuntimeException("Room not found"));
 
-        if (seatRepository.existsByRoomIdAndSeatCode(request.getRoomId(), request.getSeatCode())) {
-            throw new RuntimeException("Seat already exists in this room");
-        }
+    if (seatRepository.existsByRoomIdAndSeatCode(request.getRoomId(), request.getSeatCode())) {
+        throw new RuntimeException("Seat already exists in this room");
+    }
 
-        Seat seat = seatMapper.toSeat(request);
+    Seat seat = seatMapper.toSeat(request);
+    // ensure the seat references the room before persisting (room join column is not nullable)
+    seat.setRoom(room);
 
-        seatRepository.save(seat);
+    seatRepository.save(seat);
 
-        return seatMapper.toSeatResponse(seat);
+    return seatMapper.toSeatResponse(seat);
     }
 
     public SeatResponse updateSeat(String seatId, UpdateSeatRequest request) {
@@ -54,7 +55,7 @@ public class SeatService {
         seatRepository.deleteById(seatId);
     }
 
-    public List<SeatResponse> getSeatsByRoom(String roomId) {
+    public List<SeatResponse> getSeatsByRoom(Long roomId) {
         return seatRepository.findByRoomId(roomId)
                 .stream()
                 .map(seatMapper::toSeatResponse)

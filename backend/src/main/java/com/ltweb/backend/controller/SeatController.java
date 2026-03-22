@@ -2,7 +2,7 @@ package com.ltweb.backend.controller;
 
 import java.util.List;
 
-import com.ltweb.backend.dto.response.ApiResponse;
+import com.ltweb.backend.service.SeatService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,16 +14,22 @@ import com.ltweb.backend.dto.response.SeatResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/seats")
+@RequestMapping("/seat")
 @RequiredArgsConstructor
 public class SeatController {
 
-    private final com.ltweb.backend.service.impl.SeatService seatService;
+    private final SeatService seatService;
 
     @PostMapping
     public ResponseEntity<SeatResponse> create(@RequestBody CreateSeatRequest request) {
         SeatResponse seat = seatService.createSeat(request);
         return ResponseEntity.ok(seat);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<SeatResponse>> getAll() {
+       // List<SeatResponse> seats = seatService.getAllSeats();
+        return ResponseEntity.ok(null);
     }
 
     @PutMapping("/{id}")
@@ -47,8 +53,8 @@ public class SeatController {
     }
 
     @GetMapping("/room/{roomId}")
-    public ResponseEntity<List<SeatResponse>> getByRoom(@PathVariable String roomId) {
+    public ResponseEntity<List<SeatResponse>> getByRoom(@PathVariable Long roomId) {
         List<SeatResponse> seat = seatService.getSeatsByRoom(roomId);
-        return ResponseEntity.ok(seat);t
+        return ResponseEntity.ok(seat);
     }
 }

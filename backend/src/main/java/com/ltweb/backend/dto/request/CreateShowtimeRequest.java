@@ -1,17 +1,18 @@
-package com.ltweb.backend.dto.response;
+package com.ltweb.backend.dto.request;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.ltweb.backend.enums.ShowtimeStatus;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class ShowtimeResponse {
-    private String showtimeId;
+public class CreateShowtimeRequest {
     private Long roomId;
     private String filmId;
     private LocalDateTime startTime;

@@ -9,19 +9,16 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface SeatMapper {
 
-    @Mapping(target = "room_id",ignore = true)
     @Mapping(target = "room",ignore = true)
     @Mapping(target = "tickets", ignore = true)
+    @Mapping(target = "seatId",ignore = true)
     Seat toSeat(CreateSeatRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "room_id",ignore = true)
     @Mapping(target = "room",ignore = true)
     @Mapping(target = "tickets", ignore = true)
     void updateSeat(@MappingTarget Seat seat, UpdateSeatRequest request);
 
-    @Mapping(source = "seat_id",target = "seatId")
-    @Mapping(source = "seat_code",target = "seatCode")
     @Mapping(source = "room.id", target = "roomId")
     SeatResponse toSeatResponse(Seat seat);
 }
