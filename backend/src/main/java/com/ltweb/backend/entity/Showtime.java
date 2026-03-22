@@ -25,7 +25,7 @@ public class Showtime {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "showtime_id")
-    private String showtimeId;
+    private String id;
 
     @ManyToOne
     @JoinColumn(name = "room_id", nullable = false)

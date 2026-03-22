@@ -3,6 +3,7 @@ package com.ltweb.backend.service;
 import java.util.List;
 import java.util.Optional;
 
+import com.ltweb.backend.enums.TicketStatus;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateTicketRequest;
@@ -40,7 +41,7 @@ public class TicketService {
         Seat seat = seatRepository.findById(request.getSeatId())
             .orElseThrow(() -> new AppException(ErrorCode.SEAT_NOT_FOUND));
 
-        if (ticketRepository.existsByShowtimeShowtimeIdAndSeatSeatId(request.getShowtimeId(), request.getSeatId())) {
+        if (ticketRepository.existsByShowtimeIdAndSeatId(request.getShowtimeId(), request.getSeatId())) {
             throw new AppException(ErrorCode.TICKET_ALREADY_EXISTS);
         }
 
@@ -49,7 +50,7 @@ public class TicketService {
             .showtime(showtime)
             .seat(seat)
             .price(request.getPrice())
-            .ticketStatus(request.getTicketStatus())
+            .ticketStatus(TicketStatus.AVAILABLE)
             .qrCode(request.getQrCode())
             .build();
 
@@ -92,14 +93,14 @@ public class TicketService {
 
         if ((request.getShowtimeId() != null && !request.getShowtimeId().isBlank())
             || (request.getSeatId() != null && !request.getSeatId().isBlank())) {
-            String currentShowtimeId = ticket.getShowtime().getShowtimeId();
+            String currentShowtimeId = ticket.getShowtime().getId();
             String currentSeatId = ticket.getSeat().getId();
 
             Optional<Ticket> duplicatedTicket =
-                ticketRepository.findByShowtimeShowtimeIdAndSeatSeatId(currentShowtimeId, currentSeatId);
+                ticketRepository.findByShowtimeIdAndSeatId(currentShowtimeId, currentSeatId);
 
             if (duplicatedTicket.isPresent()
-                && !duplicatedTicket.get().getTicket_id().equals(ticket.getTicket_id())) {
+                && !duplicatedTicket.get().getId().equals(ticket.getId())) {
                 throw new AppException(ErrorCode.TICKET_ALREADY_EXISTS);
             }
         }
@@ -127,9 +128,9 @@ public class TicketService {
 
     private TicketResponse toTicketResponse(Ticket ticket) {
         return TicketResponse.builder()
-            .ticketId(ticket.getTicket_id())
-            .bookingId(ticket.getBooking() != null ? ticket.getBooking().getBooking_id() : null)
-            .showtimeId(ticket.getShowtime() != null ? ticket.getShowtime().getShowtimeId() : null)
+            .ticketId(ticket.getId())
+            .bookingId(ticket.getBooking() != null ? ticket.getBooking().getId() : null)
+            .showtimeId(ticket.getShowtime() != null ? ticket.getShowtime().getId() : null)
             .seatId(ticket.getSeat() != null ? ticket.getSeat().getId() : null)
             .price(ticket.getPrice())
             .ticketStatus(ticket.getTicketStatus())

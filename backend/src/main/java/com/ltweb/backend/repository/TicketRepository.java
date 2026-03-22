@@ -8,13 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.ltweb.backend.entity.Ticket;
 
 public interface TicketRepository extends JpaRepository<Ticket, String> {
-    List<Ticket> findByBookingBooking_id(String bookingId);
+    List<Ticket> findByBookingId(String bookingId);
 
-    List<Ticket> findByShowtimeShowtimeId(String showtimeId);
+    List<Ticket> findByShowtimeId(String showtimeId);
 
-    List<Ticket> findBySeatSeatId(String seatId);
+    List<Ticket> findBySeatId(String seatId);
 
-    Optional<Ticket> findByShowtimeShowtimeIdAndSeatSeatId(String showtimeId, String seatId);
+    Optional<Ticket> findByShowtimeIdAndSeatId(String showtimeId, String seatId);
 
-    boolean existsByShowtimeShowtimeIdAndSeatSeatId(String showtimeId, String seatId);
+    boolean existsByShowtimeIdAndSeatId(String showtimeId, String seatId);
 }

@@ -37,7 +37,8 @@ import lombok.Setter;
 public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String booking_id;
+    @Column(name = "booking_id")
+    private String id;
 
     @Column(unique = true)
     private String bookingCode;

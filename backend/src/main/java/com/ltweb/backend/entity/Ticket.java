@@ -36,7 +36,8 @@ import lombok.Setter;
 public class Ticket {
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
-	private String ticket_id;
+	@Column(name = "ticket_id")
+	private String id;
 
 	@ManyToOne
 	@JoinColumn(name = "booking_id", nullable = false)

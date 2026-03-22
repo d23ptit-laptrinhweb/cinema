@@ -22,9 +22,6 @@ public class CreateTicketRequest {
 
     @NotNull
     private BigDecimal price;
-
-    @NotNull
-    private TicketStatus ticketStatus;
-
+    
     private String qrCode;
 }
