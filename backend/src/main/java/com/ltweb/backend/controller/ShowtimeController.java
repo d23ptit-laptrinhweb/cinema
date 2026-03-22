@@ -3,11 +3,11 @@ package com.ltweb.backend.controller;
 import java.util.List;
 
 import com.ltweb.backend.service.ShowtimeService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.ltweb.backend.dto.request.CreateShowtimeRequest;
 import com.ltweb.backend.dto.request.UpdateShowtimeRequest;
+import com.ltweb.backend.dto.response.ApiResponse;
 import com.ltweb.backend.dto.response.ShowtimeResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -20,35 +20,50 @@ public class ShowtimeController {
     private final ShowtimeService showtimeService;
 
     @PostMapping
-    public ShowtimeResponse create(@RequestBody CreateShowtimeRequest request) {
-        return showtimeService.create(request);
+    public ApiResponse<ShowtimeResponse> create(@RequestBody CreateShowtimeRequest request) {
+        ApiResponse<ShowtimeResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setMessage("Create showtime successfully!");
+        apiResponse.setResult(showtimeService.create(request));
+        return apiResponse;
     }
 
     @PutMapping("/{id}")
-    public ShowtimeResponse update(
+    public ApiResponse<ShowtimeResponse> update(
         @PathVariable String id,
         @RequestBody UpdateShowtimeRequest request
     ) {
-        return showtimeService.update(id, request);
+        ApiResponse<ShowtimeResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setMessage("Showtime has been updated successfully!");
+        apiResponse.setResult(showtimeService.update(id, request));
+        return apiResponse;
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable String id) {
+    public ApiResponse<String> delete(@PathVariable String id) {
+        ApiResponse<String> apiResponse = new ApiResponse<>();
         showtimeService.delete(id);
+        apiResponse.setMessage("Showtime has been deleted successfully!");
+        return apiResponse;
     }
 
     @GetMapping("/{id}")
-    public ShowtimeResponse getById(@PathVariable String id) {
-        return showtimeService.getById(id);
+    public ApiResponse<ShowtimeResponse> getById(@PathVariable String id) {
+        ApiResponse<ShowtimeResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(showtimeService.getById(id));
+        return apiResponse;
     }
 
     @GetMapping("/room/{roomId}")
-    public List<ShowtimeResponse> getByRoom(@PathVariable Long roomId) {
-        return showtimeService.getByRoom(roomId);
+    public ApiResponse<List<ShowtimeResponse>> getByRoom(@PathVariable Long roomId) {
+        ApiResponse<List<ShowtimeResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(showtimeService.getByRoom(roomId));
+        return apiResponse;
     }
 
     @GetMapping("/film/{filmId}")
-    public List<ShowtimeResponse> getByFilm(@PathVariable String filmId) {
-        return showtimeService.getByFilm(filmId);
+    public ApiResponse<List<ShowtimeResponse>> getByFilm(@PathVariable String filmId) {
+        ApiResponse<List<ShowtimeResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(showtimeService.getByFilm(filmId));
+        return apiResponse;
     }
 }
