@@ -26,6 +26,6 @@ public interface ShowtimeMapper {
 
     @Mapping(source = "showtimeId", target = "showtimeId")
     @Mapping(source = "room.id", target = "roomId")
-    @Mapping(source = "film.filmId", target = "filmId")
+    @Mapping(source = "film.id", target = "filmId")
     ShowtimeResponse toResponse(Showtime showtime);
 }

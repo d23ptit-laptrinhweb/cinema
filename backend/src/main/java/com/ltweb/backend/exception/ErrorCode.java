@@ -26,6 +26,12 @@ public enum ErrorCode {
     // Room Management
     ROOM_NOT_FOUND(400, "Room does not exist", HttpStatus.BAD_REQUEST),
 
+    // Film Management
+    FILM_NOT_FOUND(400, "Film does not exist", HttpStatus.BAD_REQUEST),
+
+    // Genre Management
+    GENRE_NOT_FOUND(400, "Genre does not exist", HttpStatus.BAD_REQUEST),
+
     //Sign up
     DATA_INTEGRITY_VIOLATION(400, "Username or email already existed!", HttpStatus.BAD_REQUEST)
     ;

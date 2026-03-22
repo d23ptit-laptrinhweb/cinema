@@ -37,7 +37,7 @@ public class Film {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "film_id")
-    private String filmId;
+    private String id;
 
     @Column(nullable = false,name = "film_name")
     private String filmName;
@@ -53,6 +53,8 @@ public class Film {
     private String language;
 
     private String subtitle;
+
+    private String thumnbnail_url;
 
     private LocalDate releaseDate;
 
