@@ -1,7 +1,7 @@
 package com.ltweb.backend.enums;
 
 public enum TicketStatus {
-    UNBOOKED,
+    AVAILABLE,
     HOLDING,
-    BOOKED,
+    BOOKED
 }
