@@ -28,7 +28,7 @@ public class Seat {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "seat_id")
-    private String seatId;
+    private String id;
 
     @ManyToOne
     @JoinColumn(name = "room_id", nullable = false)

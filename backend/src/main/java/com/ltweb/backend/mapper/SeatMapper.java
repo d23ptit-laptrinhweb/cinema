@@ -11,7 +11,7 @@ public interface SeatMapper {
 
     @Mapping(target = "room",ignore = true)
     @Mapping(target = "tickets", ignore = true)
-    @Mapping(target = "seatId",ignore = true)
+    @Mapping(target = "id", ignore = true)
     Seat toSeat(CreateSeatRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -19,6 +19,7 @@ public interface SeatMapper {
     @Mapping(target = "tickets", ignore = true)
     void updateSeat(@MappingTarget Seat seat, UpdateSeatRequest request);
 
+    @Mapping(source = "id", target = "seatId")
     @Mapping(source = "room.id", target = "roomId")
     SeatResponse toSeatResponse(Seat seat);
 }
