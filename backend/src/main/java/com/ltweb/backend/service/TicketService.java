@@ -6,10 +6,10 @@ import java.util.Optional;
 import com.ltweb.backend.enums.TicketStatus;
 import org.springframework.stereotype.Service;
 
-import com.ltweb.backend.dto.request.CreateTicketRequest;
 import com.ltweb.backend.dto.request.UpdateTicketRequest;
 import com.ltweb.backend.dto.response.TicketResponse;
 import com.ltweb.backend.entity.Booking;
+import com.ltweb.backend.entity.Room;
 import com.ltweb.backend.entity.Seat;
 import com.ltweb.backend.entity.Showtime;
 import com.ltweb.backend.entity.Ticket;
@@ -31,30 +31,20 @@ public class TicketService {
     private final ShowtimeRepository showtimeRepository;
     private final SeatRepository seatRepository;
 
-    public TicketResponse createTicket(CreateTicketRequest request) {
-        Booking booking = bookingRepository.findById(request.getBookingId())
-            .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+    public void createTicket(Showtime showtime) {
+        List<Seat> seats = seatRepository.findByRoomId(showtime.getRoom().getId());
 
-        Showtime showtime = showtimeRepository.findById(request.getShowtimeId())
-            .orElseThrow(() -> new AppException(ErrorCode.SHOWTIME_NOT_FOUND));
-
-        Seat seat = seatRepository.findById(request.getSeatId())
-            .orElseThrow(() -> new AppException(ErrorCode.SEAT_NOT_FOUND));
-
-        if (ticketRepository.existsByShowtimeIdAndSeatId(request.getShowtimeId(), request.getSeatId())) {
-            throw new AppException(ErrorCode.TICKET_ALREADY_EXISTS);
-        }
-
-        Ticket ticket = Ticket.builder()
-            .booking(booking)
+        List<Ticket> tickets = seats.stream().map(seat->{
+            return Ticket.builder()
             .showtime(showtime)
             .seat(seat)
-            .price(request.getPrice())
+            .price(showtime.getBasePrice())
             .ticketStatus(TicketStatus.AVAILABLE)
-            .qrCode(request.getQrCode())
             .build();
+        }
+        ).toList();
 
-        return toTicketResponse(ticketRepository.save(ticket));
+        ticketRepository.saveAll(tickets);
     }
 
     public List<TicketResponse> getAllTickets() {

@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ltweb.backend.dto.request.CreateTicketRequest;
 import com.ltweb.backend.dto.request.UpdateTicketRequest;
 import com.ltweb.backend.dto.response.ApiResponse;
 import com.ltweb.backend.dto.response.TicketResponse;
@@ -25,14 +24,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TicketController {
     private final TicketService ticketService;
-
-    @PostMapping
-    public ApiResponse<TicketResponse> createTicket(@RequestBody @Valid CreateTicketRequest request) {
-        ApiResponse<TicketResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("Create ticket successfully!");
-        apiResponse.setResult(ticketService.createTicket(request));
-        return apiResponse;
-    }
 
     @GetMapping
     public ApiResponse<List<TicketResponse>> getAllTickets() {
