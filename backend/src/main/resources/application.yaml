@@ -6,8 +6,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/cinema?createDatabaseIfNotExist=true&useUnicode=true&serverTimezone=Asia/Ho_Chi_Minh
     username: root
-    password: 12345
-
+    password: 123456
   jpa:
     hibernate:
       ddl-auto: update

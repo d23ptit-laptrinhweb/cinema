@@ -51,6 +51,10 @@ public enum ErrorCode {
     TICKET_NOT_FOUND(400, "Ticket does not exist", HttpStatus.BAD_REQUEST),
     TICKET_ALREADY_EXISTS(400, "Ticket already exists for this showtime and seat", HttpStatus.BAD_REQUEST),
 
+    // Payment Management
+    PAYMENT_NOT_FOUND(400, "Payment does not exist", HttpStatus.BAD_REQUEST),
+    INVALID_PAYMENT_STATUS(400, "Invalid payment status for this operation", HttpStatus.BAD_REQUEST),
+
     //Sign up
     DATA_INTEGRITY_VIOLATION(400, "Username or email already existed!", HttpStatus.BAD_REQUEST)
     ;
