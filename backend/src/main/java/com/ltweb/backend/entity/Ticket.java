@@ -40,7 +40,7 @@ public class Ticket {
 	private String id;
 
 	@ManyToOne
-	@JoinColumn(name = "booking_id", nullable = false)
+	@JoinColumn(name = "booking_id")
 	private Booking booking;
 
 	@ManyToOne

@@ -1,89 +1,91 @@
-// package com.ltweb.backend.service;
+package com.ltweb.backend.service;
 
-// import java.util.List;
+import java.util.List;
 
-// import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Service;
 
-// import com.ltweb.backend.dto.request.CreateShowtimeRequest;
-// import com.ltweb.backend.dto.request.UpdateShowtimeRequest;
-// import com.ltweb.backend.dto.response.ShowtimeResponse;
-// import com.ltweb.backend.entity.Film;
-// import com.ltweb.backend.entity.Room;
-// import com.ltweb.backend.entity.Showtime;
-// import com.ltweb.backend.mapper.ShowtimeMapper;
-// import com.ltweb.backend.repository.FilmRepository;
-// import com.ltweb.backend.repository.RoomRepository;
-// import com.ltweb.backend.repository.ShowtimeRepository;
+import com.ltweb.backend.dto.request.CreateShowtimeRequest;
+import com.ltweb.backend.dto.request.UpdateShowtimeRequest;
+import com.ltweb.backend.dto.response.ShowtimeResponse;
+import com.ltweb.backend.entity.Film;
+import com.ltweb.backend.entity.Room;
+import com.ltweb.backend.entity.Showtime;
+import com.ltweb.backend.entity.Ticket;
+import com.ltweb.backend.mapper.SeatMapper;
+import com.ltweb.backend.mapper.ShowtimeMapper;
+import com.ltweb.backend.repository.FilmRepository;
+import com.ltweb.backend.repository.RoomRepository;
+import com.ltweb.backend.repository.SeatRepository;
+import com.ltweb.backend.repository.ShowtimeRepository;
 
-// import lombok.RequiredArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
-// @Service
-// @RequiredArgsConstructor
-// public class ShowtimeService {
+@Service
+@RequiredArgsConstructor
+public class ShowtimeService {
 
-//     private final ShowtimeRepository showtimeRepository;
-//     private final RoomRepository roomRepository;
-//     private final FilmRepository filmRepository;
-//     private final ShowtimeMapper showtimeMapper;
+    private final ShowtimeRepository showtimeRepository;
+    private final RoomRepository roomRepository;
+    private final FilmRepository filmRepository;
+    private final ShowtimeMapper showtimeMapper;
+    private final TicketService ticketService;
 
-//     public ShowtimeResponse create(CreateShowtimeRequest request) {
+    public ShowtimeResponse create(CreateShowtimeRequest request) {
 
-//         Room room = roomRepository.findById(request.getRoomId())
-//                 .orElseThrow(() -> new RuntimeException("Room not found"));
+        Room room = roomRepository.findById(request.getRoomId())
+                .orElseThrow(() -> new RuntimeException("Room not found"));
 
-//         Film film = filmRepository.findById(request.getFilmId())
-//                 .orElseThrow(() -> new RuntimeException("Film not found"));
+        Film film = filmRepository.findById(request.getFilmId())
+                .orElseThrow(() -> new RuntimeException("Film not found"));
 
-//         if (showtimeRepository.existsOverlappingShowtime(request.getRoomId(), request.getStartTime(), request.getEndTime())) {
-//             throw new RuntimeException("Time overlap");
-//         }
+        if (showtimeRepository.existsOverlappingShowtime(request.getRoomId(), request.getStartTime(), request.getEndTime())) {
+            throw new RuntimeException("Time overlap");
+        }
 
-//         Showtime showtime = showtimeMapper.toShowtime(request);
-//         showtime.setRoom(room);
-//         showtime.setFilm(film);
-//         // create ticket code
-//         /*
+        Showtime showtime = showtimeMapper.toShowtime(request);
+        showtime.setRoom(room);
+        showtime.setFilm(film);
+        
+        ticketService.createTicket(showtime);
+        
+        showtimeRepository.save(showtime);
+        return showtimeMapper.toResponse(showtime);
+    }
 
-//          */
+    public ShowtimeResponse update(String id, UpdateShowtimeRequest request) {
 
-//         showtimeRepository.save(showtime);
-//         return showtimeMapper.toResponse(showtime);
-//     }
+        Showtime showtime = showtimeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Showtime not found"));
 
-//     public ShowtimeResponse update(String id, UpdateShowtimeRequest request) {
+        showtimeMapper.updateShowtime(showtime, request);
 
-//         Showtime showtime = showtimeRepository.findById(id)
-//                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
+        return showtimeMapper.toResponse(showtime);
+    }
 
-//         showtimeMapper.updateShowtime(showtime, request);
+    public void delete(String id) {
+        Showtime showtime = showtimeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Showtime not found"));
 
-//         return showtimeMapper.toResponse(showtime);
-//     }
+        showtimeRepository.delete(showtime);
+    }
 
-//     public void delete(String id) {
-//         Showtime showtime = showtimeRepository.findById(id)
-//                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
+    public ShowtimeResponse getById(String id) {
+        return showtimeRepository.findById(id)
+                .map(showtimeMapper::toResponse)
+                .orElseThrow(() -> new RuntimeException("Showtime not found"));
+    }
 
-//         showtimeRepository.delete(showtime);
-//     }
+    public List<ShowtimeResponse> getByRoom(Long roomId) {
+        return showtimeRepository.findByRoomId(roomId)
+                .stream()
+                .map(showtimeMapper::toResponse)
+                .toList();
+    }
 
-//     public ShowtimeResponse getById(String id) {
-//         return showtimeRepository.findById(id)
-//                 .map(showtimeMapper::toResponse)
-//                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
-//     }
-
-//     public List<ShowtimeResponse> getByRoom(Long roomId) {
-//         return showtimeRepository.findByRoomId(roomId)
-//                 .stream()
-//                 .map(showtimeMapper::toResponse)
-//                 .toList();
-//     }
-
-//     public List<ShowtimeResponse> getByFilm(String filmId) {
-//         return showtimeRepository.findByFilmId(filmId)
-//                 .stream()
-//                 .map(showtimeMapper::toResponse)
-//                 .toList();
-//     }
-// }
+    public List<ShowtimeResponse> getByFilm(String filmId) {
+        return showtimeRepository.findByFilmId(filmId)
+                .stream()
+                .map(showtimeMapper::toResponse)
+                .toList();
+    }
+}
