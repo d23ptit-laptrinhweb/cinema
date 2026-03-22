@@ -67,10 +67,6 @@ public class Booking {
     @Builder.Default
     private List<Ticket> tickets = new ArrayList<>();
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Payment> payments = new ArrayList<>();
-
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

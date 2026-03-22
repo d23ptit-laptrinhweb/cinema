@@ -26,8 +26,8 @@ public class Payment {
     @Column(name = "payment_id")
     private String id;
 
-    @ManyToOne
-    @JoinColumn(name = "booking_id", nullable = false)
+    @OneToOne(optional = false)
+    @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;
 
     @Enumerated(EnumType.STRING)

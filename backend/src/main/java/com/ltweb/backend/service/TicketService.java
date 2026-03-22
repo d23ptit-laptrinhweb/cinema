@@ -53,6 +53,16 @@ public class TicketService {
             .toList();
     }
 
+    public List<TicketResponse> getTicketsByShowtimeId(String showtimeId) {
+        // Verify showtime exists
+        showtimeRepository.findById(showtimeId)
+            .orElseThrow(() -> new AppException(ErrorCode.SHOWTIME_NOT_FOUND));
+
+        return ticketRepository.findByShowtimeId(showtimeId).stream()
+            .map(this::toTicketResponse)
+            .toList();
+    }
+
     public TicketResponse getTicketById(String ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));

@@ -22,6 +22,7 @@ import com.ltweb.backend.enums.TicketStatus;
 import com.ltweb.backend.exception.AppException;
 import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.repository.BookingRepository;
+import com.ltweb.backend.repository.PaymentRepository;
 import com.ltweb.backend.repository.SeatRepository;
 import com.ltweb.backend.repository.ShowtimeRepository;
 import com.ltweb.backend.repository.TicketRepository;
@@ -41,6 +42,7 @@ public class BookingService {
     private final SeatRepository seatRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest request) {
@@ -60,18 +62,18 @@ public class BookingService {
                 .orElseThrow(() -> new AppException(ErrorCode.SEAT_NOT_FOUND)))
             .toList();
 
-        // Check if seats are available
-        for (Seat seat : selectedSeats) {
-            boolean isTicketBooked = ticketRepository.existsByShowtimeIdAndSeatId(
+        // Get and validate existing tickets for selected seats
+        List<Ticket> ticketsToReserve = selectedSeats.stream()
+            .map(seat -> ticketRepository.findByShowtimeIdAndSeatId(
                 showtime.getId(), seat.getId()
-            );
-            if (isTicketBooked) {
-                Ticket existingTicket = ticketRepository.findByShowtimeIdAndSeatId(
-                    showtime.getId(), seat.getId()
-                ).orElseThrow();
-                if (existingTicket.getTicketStatus() != TicketStatus.AVAILABLE) {
-                    throw new AppException(ErrorCode.TICKET_ALREADY_EXISTS);
-                }
+            )
+            .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND)))
+            .toList();
+
+        // Check if all tickets are available
+        for (Ticket ticket : ticketsToReserve) {
+            if (ticket.getTicketStatus() != TicketStatus.AVAILABLE) {
+                throw new AppException(ErrorCode.TICKET_ALREADY_EXISTS);
             }
         }
 
@@ -92,19 +94,15 @@ public class BookingService {
 
         booking = bookingRepository.save(booking);
 
-        // Create tickets for each seat
-        List<Ticket> tickets = selectedSeats.stream()
-            .map(seat -> Ticket.builder()
-                .booking(booking)
-                .showtime(showtime)
-                .seat(seat)
-                .price(showtime.getBasePrice())
-                .ticketStatus(TicketStatus.RESERVED)
-                .build())
-            .toList();
+        // Update existing tickets: link to booking and change status to HOLDING
+        final Booking finalBooking = booking;
+        ticketsToReserve.forEach(ticket -> {
+            ticket.setBooking(finalBooking);
+            ticket.setTicketStatus(TicketStatus.HOLDING);
+        });
 
-        ticketRepository.saveAll(tickets);
-        booking.setTickets(tickets);
+        ticketRepository.saveAll(ticketsToReserve);
+        booking.setTickets(ticketsToReserve);
 
         log.info("Booking created with code: {} for user: {}", bookingCode, username);
 
@@ -168,14 +166,30 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
+        // Only allow cancelling PENDING bookings (not yet paid)
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new AppException(ErrorCode.BOOKING_CANNOT_CANCEL);
+        }
+
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
 
-        // Update ticket status to available
+        // Revert ticket status from HOLDING back to AVAILABLE
         booking.getTickets().forEach(ticket -> {
+            ticket.setBooking(null);
             ticket.setTicketStatus(TicketStatus.AVAILABLE);
             ticketRepository.save(ticket);
         });
+
+        // Cancel any pending payment for this booking
+        var payments = paymentRepository.findByBookingId(bookingId);
+        if (!payments.isEmpty()) {
+            var payment = payments.get(0);
+            if (payment.getPaymentStatus() == com.ltweb.backend.enums.PaymentStatus.PENDING) {
+                payment.setPaymentStatus(com.ltweb.backend.enums.PaymentStatus.CANCELLED);
+                paymentRepository.save(payment);
+            }
+        }
 
         log.info("Booking cancelled: {}", bookingId);
     }
@@ -207,18 +221,6 @@ public class BookingService {
                     .price(ticket.getPrice())
                     .ticketStatus(ticket.getTicketStatus())
                     .qrCode(ticket.getQrCode())
-                    .build())
-                .toList())
-            .payments(booking.getPayments().stream()
-                .map(payment -> com.ltweb.backend.dto.response.PaymentResponse.builder()
-                    .paymentId(payment.getId())
-                    .bookingId(payment.getBooking().getId())
-                    .paymentMethod(payment.getPaymentMethod())
-                    .amount(payment.getAmount())
-                    .paymentStatus(payment.getPaymentStatus())
-                    .providerTxnId(payment.getProviderTxnId())
-                    .paidAt(payment.getPaidAt())
-                    .createdAt(payment.getCreatedAt())
                     .build())
                 .toList())
             .build();

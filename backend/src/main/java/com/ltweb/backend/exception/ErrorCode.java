@@ -46,6 +46,7 @@ public enum ErrorCode {
 
     // Booking Management
     BOOKING_NOT_FOUND(400, "Booking does not exist", HttpStatus.BAD_REQUEST),
+    BOOKING_CANNOT_CANCEL(400, "Only pending bookings can be cancelled", HttpStatus.BAD_REQUEST),
 
     // Ticket Management
     TICKET_NOT_FOUND(400, "Ticket does not exist", HttpStatus.BAD_REQUEST),

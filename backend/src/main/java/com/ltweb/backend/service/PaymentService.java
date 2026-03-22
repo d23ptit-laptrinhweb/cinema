@@ -11,10 +11,12 @@ import com.ltweb.backend.dto.response.PaymentResponse;
 import com.ltweb.backend.entity.Booking;
 import com.ltweb.backend.entity.Payment;
 import com.ltweb.backend.enums.PaymentStatus;
+import com.ltweb.backend.enums.TicketStatus;
 import com.ltweb.backend.exception.AppException;
 import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.repository.BookingRepository;
 import com.ltweb.backend.repository.PaymentRepository;
+import com.ltweb.backend.repository.TicketRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
+    private final TicketRepository ticketRepository;
 
     @Transactional
     public PaymentResponse createPayment(CreatePaymentRequest request) {
@@ -79,9 +82,16 @@ public class PaymentService {
         if (request.getPaymentStatus() != null) {
             payment.setPaymentStatus(request.getPaymentStatus());
 
-            // If payment is successful, set paidAt timestamp
+            // If payment is successful, set paidAt timestamp and update ticket status to BOOKED
             if (request.getPaymentStatus() == PaymentStatus.PAID) {
                 payment.setPaidAt(LocalDateTime.now());
+                
+                // Update all tickets from HOLDING to BOOKED
+                Booking booking = payment.getBooking();
+                booking.getTickets().forEach(ticket -> {
+                    ticket.setTicketStatus(TicketStatus.BOOKED);
+                    ticketRepository.save(ticket);
+                });
             }
         }
 
@@ -97,18 +107,18 @@ public class PaymentService {
     }
 
     @Transactional
-    public void refundPayment(String paymentId) {
+    public void cancelPayment(String paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
             .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
 
-        if (payment.getPaymentStatus() != PaymentStatus.PAID) {
+        if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
             throw new AppException(ErrorCode.INVALID_PAYMENT_STATUS);
         }
 
-        payment.setPaymentStatus(PaymentStatus.REFUNDED);
+        payment.setPaymentStatus(PaymentStatus.CANCELLED);
         paymentRepository.save(payment);
 
-        log.info("Payment refunded: {}", paymentId);
+        log.info("Payment cancelled: {}", paymentId);
     }
 
     private PaymentResponse toPaymentResponse(Payment payment) {

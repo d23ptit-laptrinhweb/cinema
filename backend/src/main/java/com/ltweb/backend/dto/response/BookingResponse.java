@@ -33,5 +33,5 @@ public class BookingResponse {
 
     private List<TicketResponse> tickets;
 
-    private List<PaymentResponse> payments;
+    private PaymentResponse payment;
 }

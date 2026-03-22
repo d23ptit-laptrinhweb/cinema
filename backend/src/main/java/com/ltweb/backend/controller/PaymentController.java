@@ -79,14 +79,14 @@ public class PaymentController {
         return apiResponse;
     }
 
-    @PostMapping("/{id}/refund")
+    @PostMapping("/{id}/cancel")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<String> refundPayment(
+    public ApiResponse<String> cancelPayment(
         @PathVariable("id") String id
     ) {
-        paymentService.refundPayment(id);
+        paymentService.cancelPayment(id);
         ApiResponse<String> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("Payment refunded successfully!");
+        apiResponse.setMessage("Payment cancelled successfully!");
         return apiResponse;
     }
 }

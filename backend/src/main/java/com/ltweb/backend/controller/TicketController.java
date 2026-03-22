@@ -32,6 +32,13 @@ public class TicketController {
         return apiResponse;
     }
 
+    @GetMapping("/showtime/{showtimeId}")
+    public ApiResponse<List<TicketResponse>> getTicketsByShowtime(@PathVariable("showtimeId") String showtimeId) {
+        ApiResponse<List<TicketResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(ticketService.getTicketsByShowtimeId(showtimeId));
+        return apiResponse;
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<TicketResponse> getTicketById(@PathVariable("id") String id) {
         ApiResponse<TicketResponse> apiResponse = new ApiResponse<>();
