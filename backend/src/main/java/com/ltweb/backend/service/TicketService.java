@@ -4,12 +4,13 @@ import java.util.List;
 import java.util.Optional;
 
 import com.ltweb.backend.enums.TicketStatus;
+
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.UpdateTicketRequest;
 import com.ltweb.backend.dto.response.TicketResponse;
 import com.ltweb.backend.entity.Booking;
-import com.ltweb.backend.entity.Room;
 import com.ltweb.backend.entity.Seat;
 import com.ltweb.backend.entity.Showtime;
 import com.ltweb.backend.entity.Ticket;
@@ -31,6 +32,7 @@ public class TicketService {
     private final ShowtimeRepository showtimeRepository;
     private final SeatRepository seatRepository;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void createTicket(Showtime showtime) {
         List<Seat> seats = seatRepository.findByRoomId(showtime.getRoom().getId());
 
@@ -47,6 +49,7 @@ public class TicketService {
         ticketRepository.saveAll(tickets);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<TicketResponse> getAllTickets() {
         return ticketRepository.findAll().stream()
             .map(this::toTicketResponse)

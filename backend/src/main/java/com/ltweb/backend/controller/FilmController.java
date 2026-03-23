@@ -41,6 +41,20 @@ public class FilmController {
         return apiResponse;
     }
 
+    @GetMapping("/upcoming")
+    public ApiResponse<List<FilmResponse>> getUpcomingFilms() {
+        ApiResponse<List<FilmResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(filmService.getUpcomingFilms());
+        return apiResponse;
+    }
+
+    @GetMapping("/now-showing")
+    public ApiResponse<List<FilmResponse>> getNowShowingFilms() {
+        ApiResponse<List<FilmResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(filmService.getNowShowingFilms());
+        return apiResponse;
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<FilmResponse> getFilmById(@PathVariable("id") String id) {
         ApiResponse<FilmResponse> apiResponse = new ApiResponse<>();

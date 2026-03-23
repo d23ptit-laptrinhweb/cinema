@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateGenreRequest;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class GenreService {
     private final GenreRepository genreRepository;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public GenreResponse createGenre(CreateGenreRequest createGenreRequest) {
         Genre genre = new Genre();
         genre.setName(createGenreRequest.getName());
@@ -39,6 +41,7 @@ public class GenreService {
         return toGenreResponse(genre);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public GenreResponse updateGenre(Long genreId, UpdateGenreRequest request) {
         Genre genre = genreRepository.findById(genreId)
             .orElseThrow(() -> new AppException(ErrorCode.GENRE_NOT_FOUND));
@@ -50,6 +53,7 @@ public class GenreService {
         return toGenreResponse(genreRepository.save(genre));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteGenre(Long genreId) {
         Genre genre = genreRepository.findById(genreId)
             .orElseThrow(() -> new AppException(ErrorCode.GENRE_NOT_FOUND));

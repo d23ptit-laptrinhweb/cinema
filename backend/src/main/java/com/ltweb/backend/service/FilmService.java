@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateFilmRequest;
@@ -12,6 +13,7 @@ import com.ltweb.backend.dto.response.FilmResponse;
 import com.ltweb.backend.dto.response.GenreResponse;
 import com.ltweb.backend.entity.Film;
 import com.ltweb.backend.entity.Genre;
+import com.ltweb.backend.enums.FilmStatus;
 import com.ltweb.backend.exception.AppException;
 import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.repository.FilmRepository;
@@ -25,6 +27,7 @@ public class FilmService {
     private final FilmRepository filmRepository;
     private final GenreRepository genreRepository;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public FilmResponse createFilm(CreateFilmRequest createFilmRequest) {
         Film film = Film.builder()
             .filmName(createFilmRequest.getFilmName())
@@ -55,12 +58,25 @@ public class FilmService {
             .toList();
     }
 
+    public List<FilmResponse> getUpcomingFilms() {
+        return filmRepository.findByStatus(FilmStatus.UPCOMING).stream()
+            .map(this::toFilmResponse)
+            .toList();
+    }
+
+    public List<FilmResponse> getNowShowingFilms() {
+        return filmRepository.findByStatus(FilmStatus.NOW_SHOWING).stream()
+            .map(this::toFilmResponse)
+            .toList();
+    }
+
     public FilmResponse getFilmById(String filmId) {
         Film film = filmRepository.findById(filmId)
             .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));
         return toFilmResponse(film);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public FilmResponse updateFilm(String filmId, UpdateFilmRequest request) {
         Film film = filmRepository.findById(filmId)
             .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));
@@ -105,6 +121,7 @@ public class FilmService {
         return toFilmResponse(filmRepository.save(film));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteFilm(String filmId) {
         Film film = filmRepository.findById(filmId)
             .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));

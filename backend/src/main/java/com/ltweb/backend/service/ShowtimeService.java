@@ -2,6 +2,7 @@ package com.ltweb.backend.service;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateShowtimeRequest;
@@ -10,12 +11,9 @@ import com.ltweb.backend.dto.response.ShowtimeResponse;
 import com.ltweb.backend.entity.Film;
 import com.ltweb.backend.entity.Room;
 import com.ltweb.backend.entity.Showtime;
-import com.ltweb.backend.entity.Ticket;
-import com.ltweb.backend.mapper.SeatMapper;
 import com.ltweb.backend.mapper.ShowtimeMapper;
 import com.ltweb.backend.repository.FilmRepository;
 import com.ltweb.backend.repository.RoomRepository;
-import com.ltweb.backend.repository.SeatRepository;
 import com.ltweb.backend.repository.ShowtimeRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +28,7 @@ public class ShowtimeService {
     private final ShowtimeMapper showtimeMapper;
     private final TicketService ticketService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public ShowtimeResponse create(CreateShowtimeRequest request) {
 
         Room room = roomRepository.findById(request.getRoomId())
@@ -52,6 +51,7 @@ public class ShowtimeService {
         return showtimeMapper.toResponse(showtime);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public ShowtimeResponse update(String id, UpdateShowtimeRequest request) {
 
         Showtime showtime = showtimeRepository.findById(id)
@@ -62,6 +62,7 @@ public class ShowtimeService {
         return showtimeMapper.toResponse(showtime);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(String id) {
         Showtime showtime = showtimeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
@@ -75,6 +76,7 @@ public class ShowtimeService {
                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<ShowtimeResponse> getByRoom(Long roomId) {
         return showtimeRepository.findByRoomId(roomId)
                 .stream()

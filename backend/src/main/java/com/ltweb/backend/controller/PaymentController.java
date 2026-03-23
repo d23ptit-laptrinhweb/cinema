@@ -2,8 +2,6 @@ package com.ltweb.backend.controller;
 
 import java.util.List;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,7 +27,6 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ApiResponse<PaymentResponse> createPayment(
         @RequestBody @Valid CreatePaymentRequest request
     ) {
@@ -40,7 +37,6 @@ public class PaymentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<PaymentResponse>> getAllPayments() {
         ApiResponse<List<PaymentResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setResult(paymentService.getAllPayments());
@@ -48,7 +44,6 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PaymentResponse> getPaymentById(
         @PathVariable("id") String id
     ) {
@@ -58,7 +53,6 @@ public class PaymentController {
     }
 
     @GetMapping("/booking/{bookingId}")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ApiResponse<List<PaymentResponse>> getPaymentsByBookingId(
         @PathVariable("bookingId") String bookingId
     ) {
@@ -68,7 +62,6 @@ public class PaymentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PaymentResponse> updatePayment(
         @PathVariable("id") String id,
         @RequestBody @Valid UpdatePaymentRequest request
@@ -80,7 +73,6 @@ public class PaymentController {
     }
 
     @PostMapping("/{id}/cancel")
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> cancelPayment(
         @PathVariable("id") String id
     ) {

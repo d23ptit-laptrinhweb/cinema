@@ -13,7 +13,7 @@ public enum ErrorCode {
     
     // Authentication & Authorization
     UNAUTHORIZED(401, "Unauthorized", HttpStatus.UNAUTHORIZED),
-    LOGIN_FAILED(401, "Email or password incorrect", HttpStatus.UNAUTHORIZED),
+    LOGIN_FAILED(401, "Username or password incorrect", HttpStatus.UNAUTHORIZED),
     ACCESS_DENIED(403, "Access denied", HttpStatus.FORBIDDEN),
     TOKEN_INVALID(401, "Invalid JWT token", HttpStatus.UNAUTHORIZED),
     TOKEN_SIGNING_FAILED(500, "Failed to sign JWT token", HttpStatus.INTERNAL_SERVER_ERROR),

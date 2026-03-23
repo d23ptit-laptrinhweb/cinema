@@ -3,6 +3,7 @@ package com.ltweb.backend.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreatePaymentRequest;
@@ -52,12 +53,14 @@ public class PaymentService {
         return toPaymentResponse(payment);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<PaymentResponse> getAllPayments() {
         return paymentRepository.findAll().stream()
             .map(this::toPaymentResponse)
             .toList();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public PaymentResponse getPaymentById(String paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
             .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));

@@ -2,7 +2,6 @@ package com.ltweb.backend.controller;
 
 import java.util.List;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,7 +28,6 @@ public class BookingController {
     private final BookingService bookingService;
 
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
     public ApiResponse<BookingResponse> createBooking(
         @RequestBody @Valid CreateBookingRequest request
     ) {
@@ -40,7 +38,6 @@ public class BookingController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<BookingResponse>> getAllBookings() {
         ApiResponse<List<BookingResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setResult(bookingService.getAllBookings());
@@ -48,7 +45,6 @@ public class BookingController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<BookingResponse> getBookingById(
         @PathVariable("id") String id
     ) {
@@ -58,7 +54,6 @@ public class BookingController {
     }
 
     @GetMapping("/my-bookings/list")
-    @PreAuthorize("hasRole('USER')")
     public ApiResponse<List<BookingResponse>> getMyBookingsList() {
         ApiResponse<List<BookingResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setResult(bookingService.getMyBookingsList());
@@ -66,7 +61,6 @@ public class BookingController {
     }
 
     @GetMapping("/my-bookings/{id}")
-    @PreAuthorize("hasRole('USER')")
     public ApiResponse<BookingResponse> getMyBooking(
         @PathVariable("id") String id
     ) {
@@ -76,7 +70,6 @@ public class BookingController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<BookingResponse> updateBooking(
         @PathVariable("id") String id,
         @RequestBody @Valid UpdateBookingRequest request
@@ -88,7 +81,6 @@ public class BookingController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ApiResponse<String> cancelBooking(
         @PathVariable("id") String id
     ) {

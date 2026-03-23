@@ -3,6 +3,8 @@ package com.ltweb.backend.service;
 import java.util.List;
 
 import com.ltweb.backend.mapper.SeatMapper;
+
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateSeatRequest;
@@ -23,24 +25,26 @@ public class SeatService {
     private final RoomRepository roomRepository;
     private final SeatMapper seatMapper;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public SeatResponse createSeat(CreateSeatRequest request) {
 
-    var room = roomRepository.findById(request.getRoomId())
-        .orElseThrow(() -> new RuntimeException("Room not found"));
+        var room = roomRepository.findById(request.getRoomId())
+            .orElseThrow(() -> new RuntimeException("Room not found"));
 
-    if (seatRepository.existsByRoomIdAndSeatCode(request.getRoomId(), request.getSeatCode())) {
-        throw new RuntimeException("Seat already exists in this room");
+        if (seatRepository.existsByRoomIdAndSeatCode(request.getRoomId(), request.getSeatCode())) {
+            throw new RuntimeException("Seat already exists in this room");
+        }
+
+        Seat seat = seatMapper.toSeat(request);
+        // ensure the seat references the room before persisting (room join column is not nullable)
+        seat.setRoom(room);
+
+        seatRepository.save(seat);
+
+        return seatMapper.toSeatResponse(seat);
     }
 
-    Seat seat = seatMapper.toSeat(request);
-    // ensure the seat references the room before persisting (room join column is not nullable)
-    seat.setRoom(room);
-
-    seatRepository.save(seat);
-
-    return seatMapper.toSeatResponse(seat);
-    }
-
+    @PreAuthorize("hasRole('ADMIN')")
     public SeatResponse updateSeat(String seatId, UpdateSeatRequest request) {
 
         Seat seat = seatRepository.findById(seatId)
@@ -51,6 +55,7 @@ public class SeatService {
         return seatMapper.toSeatResponse(seat);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteSeat(String seatId) {
         seatRepository.deleteById(seatId);
     }

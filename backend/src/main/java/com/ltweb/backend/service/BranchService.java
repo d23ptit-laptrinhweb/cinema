@@ -2,6 +2,7 @@ package com.ltweb.backend.service;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateBranchRequest;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class BranchService {
     private final BranchRepository branchRepository;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public BranchResponse createBranch(CreateBranchRequest createBranchRequest){
         Branch branch = new Branch();
         branch.setBranch_code(createBranchRequest.getBranchCode());
@@ -30,11 +32,13 @@ public class BranchService {
         return toBranchResponse(branchRepository.save(branch));
     }
 
+    
     public List<BranchResponse> getAllBranches() {
         return branchRepository.findAll().stream()
             .map(this::toBranchResponse)
             .toList();
     }
+
 
     public BranchResponse getBranchById(String branchId) {
         Branch branch = branchRepository.findById(branchId)
@@ -42,6 +46,7 @@ public class BranchService {
         return toBranchResponse(branch);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public BranchResponse updateBranch(String branchId, UpdateBranchRequest request) {
         Branch branch = branchRepository.findById(branchId)
             .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));
@@ -68,6 +73,7 @@ public class BranchService {
         return toBranchResponse(branchRepository.save(branch));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteBranch(String branchId){
         Branch branch = branchRepository.findById(branchId)
             .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));

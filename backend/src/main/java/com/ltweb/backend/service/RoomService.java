@@ -2,6 +2,7 @@ package com.ltweb.backend.service;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateRoomRequest;
@@ -24,6 +25,7 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final BranchRepository branchRepository;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public RoomResponse createRoom(CreateRoomRequest request) {
         Branch branch = branchRepository.findById(request.getBranchId())
             .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));
@@ -39,6 +41,7 @@ public class RoomService {
         return toRoomResponse(roomRepository.save(room));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<RoomResponse> getAllRooms(String branchId, RoomStatus status) {
         if (branchId != null && status != null) {
             return roomRepository.findByBranchIdAndStatus(branchId, status).stream()
@@ -60,12 +63,15 @@ public class RoomService {
             .toList();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public RoomResponse getRoomById(Long id) {
         Room room = roomRepository.findById(id)
             .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
         return toRoomResponse(room);
     }
+    
 
+    @PreAuthorize("hasRole('ADMIN')")
     public RoomResponse updateRoom(Long id, UpdateRoomRequest request) {
         Room room = roomRepository.findById(id)
             .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
@@ -95,6 +101,7 @@ public class RoomService {
         return toRoomResponse(roomRepository.save(room));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteRoom(Long id) {
         Room room = roomRepository.findById(id)
             .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));

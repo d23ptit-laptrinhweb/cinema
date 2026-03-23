@@ -2,22 +2,26 @@ package com.ltweb.backend.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateBookingRequest;
 import com.ltweb.backend.dto.request.UpdateBookingRequest;
 import com.ltweb.backend.dto.response.BookingResponse;
+import com.ltweb.backend.dto.response.TicketResponse;
 import com.ltweb.backend.entity.Booking;
 import com.ltweb.backend.entity.Seat;
 import com.ltweb.backend.entity.Showtime;
 import com.ltweb.backend.entity.Ticket;
 import com.ltweb.backend.entity.User;
 import com.ltweb.backend.enums.BookingStatus;
+import com.ltweb.backend.enums.PaymentStatus;
 import com.ltweb.backend.enums.TicketStatus;
 import com.ltweb.backend.exception.AppException;
 import com.ltweb.backend.exception.ErrorCode;
@@ -45,6 +49,7 @@ public class BookingService {
     private final PaymentRepository paymentRepository;
 
     @Transactional
+    @PostAuthorize("returnObject.username == authentication.name")
     public BookingResponse createBooking(CreateBookingRequest request) {
         // Get current user
         var context = SecurityContextHolder.getContext();
@@ -121,6 +126,7 @@ public class BookingService {
         return toBookingResponse(booking);
     }
 
+    @PostAuthorize("returnObject.username == authentication.name")
     public BookingResponse getMyBookings(String bookingId) {
         var context = SecurityContextHolder.getContext();
         String username = Objects.requireNonNull(context.getAuthentication()).getName();
@@ -137,6 +143,7 @@ public class BookingService {
         return toBookingResponse(booking);
     }
 
+    @PostAuthorize("returnObject.username == authentication.name")
     public List<BookingResponse> getMyBookingsList() {
         var context = SecurityContextHolder.getContext();
         String username = Objects.requireNonNull(context.getAuthentication()).getName();
@@ -185,8 +192,8 @@ public class BookingService {
         var payments = paymentRepository.findByBookingId(bookingId);
         if (!payments.isEmpty()) {
             var payment = payments.get(0);
-            if (payment.getPaymentStatus() == com.ltweb.backend.enums.PaymentStatus.PENDING) {
-                payment.setPaymentStatus(com.ltweb.backend.enums.PaymentStatus.CANCELLED);
+            if (payment.getPaymentStatus() == PaymentStatus.PENDING) {
+                payment.setPaymentStatus(PaymentStatus.CANCELLED);
                 paymentRepository.save(payment);
             }
         }
@@ -196,7 +203,7 @@ public class BookingService {
 
     private String generateBookingCode() {
         // Format: BK-YYYYMMDD-XXXXXX (6 random characters)
-        String timestamp = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String randomPart = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
         return "BK-" + timestamp + "-" + randomPart;
     }
@@ -213,7 +220,7 @@ public class BookingService {
             .createdAt(booking.getCreatedAt())
             .updatedAt(booking.getUpdatedAt())
             .tickets(booking.getTickets().stream()
-                .map(ticket -> com.ltweb.backend.dto.response.TicketResponse.builder()
+                .map(ticket -> TicketResponse.builder()
                     .ticketId(ticket.getId())
                     .bookingId(ticket.getBooking() != null ? ticket.getBooking().getId() : null)
                     .showtimeId(ticket.getShowtime().getId())

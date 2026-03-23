@@ -4,7 +4,7 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/cinema?createDatabaseIfNotExist=true&useUnicode=true&serverTimezone=Asia/Ho_Chi_Minh
+    url: jdbc:mysql://localhost:3306/cinema
     username: root
     password: 123456
   jpa:
@@ -27,3 +27,10 @@ server:
 
 jwt:
   secret-key: 1fa10329547167709d24b3287b742dd287233b6bf4d36604e924dba849d05cf9b6b1d69d1f2493f1b26c5c28fd8e9366187decd7be4c4c90585235b7a5d79338
+
+vnpay:
+  tmn-code: DEXNVHU5
+  secret-key: XSY2C7J34RAME8065G31P99NEF9N7ULT
+  pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  api-url: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
+  return-url: http://localhost:8080/api/v1/vnpay/return
