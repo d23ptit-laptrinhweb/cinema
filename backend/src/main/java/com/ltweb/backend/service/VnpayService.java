@@ -10,20 +10,49 @@ import com.ltweb.backend.config.VnpayProperties;
 import com.ltweb.backend.dto.request.CreateVnpayRequest;
 import com.ltweb.backend.dto.request.QueryRequest;
 import com.ltweb.backend.dto.request.RefundRequest;
+import com.ltweb.backend.dto.response.ApiResponse;
+import com.ltweb.backend.entity.Booking;
+import com.ltweb.backend.entity.Payment;
+import com.ltweb.backend.enums.BookingStatus;
+import com.ltweb.backend.enums.PaymentStatus;
+import com.ltweb.backend.enums.TicketStatus;
+import com.ltweb.backend.repository.BookingRepository;
+import com.ltweb.backend.repository.PaymentRepository;
+import com.ltweb.backend.repository.TicketRepository;
 import com.ltweb.backend.util.VnpayUtil;
+import jakarta.transaction.Transactional;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
 public class VnpayService {
 
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter VNPAY_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
     private final VnpayProperties props;
     private final RestTemplate restTemplate;
+    private final BookingRepository bookingRepository;
+    private final PaymentRepository paymentRepository;
+    private final TicketRepository ticketRepository;
 
-    public VnpayService(VnpayProperties props, RestTemplate restTemplate) {
+    private static final Map<String, String> RESPONSE_CODE_DESC = createResponseCodeDesc();
+    private static final Map<String, String> TRANSACTION_STATUS_DESC = createTransactionStatusDesc();
+
+    public VnpayService(VnpayProperties props,
+                        RestTemplate restTemplate,
+                        BookingRepository bookingRepository,
+                        PaymentRepository paymentRepository,
+                        TicketRepository ticketRepository) {
         this.props = props;
         this.restTemplate = restTemplate;
+        this.bookingRepository = bookingRepository;
+        this.paymentRepository = paymentRepository;
+        this.ticketRepository = ticketRepository;
     }
 
     public Map<String, Object> createPaymentUrl(CreateVnpayRequest req, HttpServletRequest request) {
@@ -53,11 +82,9 @@ public class VnpayService {
         params.put("vnp_ReturnUrl", props.getReturnUrl());
         params.put("vnp_IpAddr", ipAddr);
 
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        params.put("vnp_CreateDate", formatter.format(cld.getTime()));
-        cld.add(Calendar.MINUTE, 15);
-        params.put("vnp_ExpireDate", formatter.format(cld.getTime()));
+        ZonedDateTime now = ZonedDateTime.now(VN_ZONE);
+        params.put("vnp_CreateDate", now.format(VNPAY_TIME_FORMATTER));
+        params.put("vnp_ExpireDate", now.plusMinutes(30).format(VNPAY_TIME_FORMATTER));
 
         List<String> fieldNames = new ArrayList<>(params.keySet());
         Collections.sort(fieldNames);
@@ -96,9 +123,7 @@ public class VnpayService {
         String orderInfo = "Kiem tra ket qua GD OrderId:" + req.getOrderId();
         String ipAddr = VnpayUtil.getClientIp(servletRequest);
 
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        String createDate = formatter.format(cld.getTime());
+        String createDate = ZonedDateTime.now(VN_ZONE).format(VNPAY_TIME_FORMATTER);
 
         String hashData = String.join("|",
                 requestId, version, command, tmnCode, req.getOrderId(),
@@ -131,9 +156,7 @@ public class VnpayService {
         String orderInfo = "Hoan tien GD OrderId:" + req.getOrderId();
         String ipAddr = VnpayUtil.getClientIp(servletRequest);
 
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        String createDate = formatter.format(cld.getTime());
+        String createDate = ZonedDateTime.now(VN_ZONE).format(VNPAY_TIME_FORMATTER);
 
         String hashData = String.join("|",
                 requestId, version, command, tmnCode, req.getTrantype(),
@@ -171,9 +194,10 @@ public class VnpayService {
             }
         }
 
+        
         String hashData = VnpayUtil.buildReturnHashData(filtered);
         String calculatedHash = VnpayUtil.hmacSHA512(props.getSecretKey(), hashData);
-        boolean valid = calculatedHash.equals(secureHash);
+        boolean valid = calculatedHash.equalsIgnoreCase(secureHash);
 
         Map<String, Object> result = new HashMap<>();
         result.put("validSignature", valid);
@@ -186,6 +210,149 @@ public class VnpayService {
         result.put("vnp_BankCode", params.get("vnp_BankCode"));
         result.put("vnp_PayDate", params.get("vnp_PayDate"));
         return result;
+    }
+
+    public ApiResponse<Map<String, Object>> processReturnUrl(Map<String, String> params) {
+        Map<String, Object> verify = verifyCallback(params);
+        boolean validSignature = Boolean.TRUE.equals(verify.get("validSignature"));
+
+        if (!validSignature) {
+            return ApiResponse.<Map<String, Object>>builder()
+                    .code(97)
+                    .message("Chu ky khong hop le")
+                    .result(verify)
+                    .build();
+        }
+
+        String responseCode = String.valueOf(verify.getOrDefault("vnp_ResponseCode", ""));
+        String transactionStatus = String.valueOf(verify.getOrDefault("vnp_TransactionStatus", ""));
+
+        verify.put("vnp_ResponseCodeDesc", RESPONSE_CODE_DESC.getOrDefault(responseCode, "Loi khac"));
+        verify.put("vnp_TransactionStatusDesc", TRANSACTION_STATUS_DESC.getOrDefault(transactionStatus, "Khong xac dinh"));
+
+        boolean success = "00".equals(responseCode) && "00".equals(transactionStatus);
+        if (success) {
+            return ApiResponse.<Map<String, Object>>builder()
+                    .code(200)
+                    .message("GD Thanh cong")
+                    .result(verify)
+                    .build();
+        }
+
+        return ApiResponse.<Map<String, Object>>builder()
+                .code(99)
+                .message("GD Khong thanh cong")
+                .result(verify)
+                .build();
+    }
+
+    @Transactional
+    public Map<String, String> processIpn(Map<String, String> params) {
+        try {
+            Map<String, Object> verify = verifyCallback(params);
+            boolean validSignature = Boolean.TRUE.equals(verify.get("validSignature"));
+            if (!validSignature) {
+                return rsp("97", "Invalid Checksum");
+            }
+
+            String txnRef = params.get("vnp_TxnRef");
+            if (txnRef == null || txnRef.isBlank()) {
+                return rsp("01", "Order not Found");
+            }
+
+            Optional<Booking> bookingOpt = bookingRepository.findByBookingCode(txnRef);
+            if (bookingOpt.isEmpty()) {
+                return rsp("01", "Order not Found");
+            }
+
+            Booking booking = bookingOpt.get();
+            String vnpAmount = params.get("vnp_Amount");
+            long expectedAmount = booking.getTotalAmount().movePointRight(2).longValue();
+            if (vnpAmount == null || !String.valueOf(expectedAmount).equals(vnpAmount)) {
+                return rsp("04", "Invalid Amount");
+            }
+
+            List<Payment> payments = paymentRepository.findByBookingId(booking.getId());
+            Payment payment = payments.isEmpty() ? null : payments.get(0);
+
+            if (booking.getStatus() == BookingStatus.CONFIRMED
+                    || (payment != null && payment.getPaymentStatus() == PaymentStatus.PAID)) {
+                return rsp("02", "Order already confirmed");
+            }
+
+            boolean paymentSuccess = "00".equals(params.get("vnp_ResponseCode"))
+                    && "00".equals(params.get("vnp_TransactionStatus"));
+
+            if (payment != null) {
+                payment.setProviderTxnId(params.get("vnp_TransactionNo"));
+                payment.setPaymentStatus(paymentSuccess ? PaymentStatus.PAID : PaymentStatus.CANCELLED);
+                if (paymentSuccess) {
+                    payment.setPaidAt(LocalDateTime.now());
+                }
+                paymentRepository.save(payment);
+            }
+
+            if (paymentSuccess) {
+                booking.setStatus(BookingStatus.CONFIRMED);
+                bookingRepository.save(booking);
+
+                booking.getTickets().forEach(ticket -> {
+                    ticket.setTicketStatus(TicketStatus.BOOKED);
+                    ticketRepository.save(ticket);
+                });
+            } else {
+                booking.setStatus(BookingStatus.CANCELLED);
+                bookingRepository.save(booking);
+
+                booking.getTickets().forEach(ticket -> {
+                    ticket.setBooking(null);
+                    ticket.setTicketStatus(TicketStatus.AVAILABLE);
+                    ticketRepository.save(ticket);
+                });
+            }
+
+            return rsp("00", "Confirm Success");
+        } catch (Exception e) {
+            return rsp("99", "Unknown error");
+        }
+    }
+
+    private Map<String, String> rsp(String code, String message) {
+        Map<String, String> m = new HashMap<>();
+        m.put("RspCode", code);
+        m.put("Message", message);
+        return m;
+    }
+
+    private static Map<String, String> createTransactionStatusDesc() {
+        Map<String, String> map = new HashMap<>();
+        map.put("00", "Giao dich thanh cong");
+        map.put("01", "Giao dich chua hoan tat");
+        map.put("02", "Giao dich bi loi");
+        map.put("04", "Giao dich dao");
+        map.put("05", "VNPAY dang xu ly giao dich nay");
+        map.put("06", "VNPAY da gui yeu cau hoan tien sang Ngan hang");
+        map.put("07", "Giao dich bi nghi ngo gian lan");
+        map.put("09", "GD Hoan tra bi tu choi");
+        return map;
+    }
+
+    private static Map<String, String> createResponseCodeDesc() {
+        Map<String, String> map = new HashMap<>();
+        map.put("00", "Giao dich thanh cong");
+        map.put("07", "Tru tien thanh cong. Giao dich bi nghi ngo");
+        map.put("09", "The/Tai khoan chua dang ky InternetBanking");
+        map.put("10", "Xac thuc thong tin the/tai khoan khong dung qua 3 lan");
+        map.put("11", "Da het han cho thanh toan");
+        map.put("12", "The/Tai khoan bi khoa");
+        map.put("13", "Nhap sai OTP");
+        map.put("24", "Khach hang huy giao dich");
+        map.put("51", "Tai khoan khong du so du");
+        map.put("65", "Tai khoan vuot qua han muc giao dich trong ngay");
+        map.put("75", "Ngan hang thanh toan dang bao tri");
+        map.put("79", "Nhap sai mat khau thanh toan qua so lan quy dinh");
+        map.put("99", "Loi khac");
+        return map;
     }
 
     private String postJson(Map<String, String> payload) {

@@ -30,6 +30,8 @@ public class SecurityConfig {
             "/sign-up",
             "/auth/login",
             "/auth/refresh",
+            "/v1/vnpay/return",
+            "/v1/vnpay/ipn",
     };
 
     private final CustomUserDetailService userDetailsService;
