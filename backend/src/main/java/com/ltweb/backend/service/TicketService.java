@@ -1,7 +1,6 @@
 package com.ltweb.backend.service;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.ltweb.backend.enums.TicketStatus;
 
@@ -17,6 +16,7 @@ import com.ltweb.backend.entity.Ticket;
 import com.ltweb.backend.exception.AppException;
 import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.repository.BookingRepository;
+import com.ltweb.backend.repository.SeatTypePriceRepository;
 import com.ltweb.backend.repository.SeatRepository;
 import com.ltweb.backend.repository.ShowtimeRepository;
 import com.ltweb.backend.repository.TicketRepository;
@@ -31,16 +31,18 @@ public class TicketService {
     private final BookingRepository bookingRepository;
     private final ShowtimeRepository showtimeRepository;
     private final SeatRepository seatRepository;
+    private final SeatTypePriceRepository seatTypePriceRepository;
 
     @PreAuthorize("hasRole('ADMIN')")
     public void createTicket(Showtime showtime) {
         List<Seat> seats = seatRepository.findByRoomId(showtime.getRoom().getId());
 
         List<Ticket> tickets = seats.stream().map(seat->{
+            var seatTypePrice = seatTypePriceRepository.findBySeatType(seat.getSeatType());
             return Ticket.builder()
             .showtime(showtime)
             .seat(seat)
-            .price(showtime.getBasePrice())
+            .price(seatTypePrice.map(price -> price.getPrice()).orElse(showtime.getBasePrice()))
             .ticketStatus(TicketStatus.AVAILABLE)
             .build();
         }
@@ -94,24 +96,7 @@ public class TicketService {
             ticket.setSeat(seat);
         }
 
-        if ((request.getShowtimeId() != null && !request.getShowtimeId().isBlank())
-            || (request.getSeatId() != null && !request.getSeatId().isBlank())) {
-            String currentShowtimeId = ticket.getShowtime().getId();
-            String currentSeatId = ticket.getSeat().getId();
-
-            Optional<Ticket> duplicatedTicket =
-                ticketRepository.findByShowtimeIdAndSeatId(currentShowtimeId, currentSeatId);
-
-            if (duplicatedTicket.isPresent()
-                && !duplicatedTicket.get().getId().equals(ticket.getId())) {
-                throw new AppException(ErrorCode.TICKET_ALREADY_EXISTS);
-            }
-        }
-
-        if (request.getPrice() != null) {
-            ticket.setPrice(request.getPrice());
-        }
-
+    
         if (request.getTicketStatus() != null) {
             ticket.setTicketStatus(request.getTicketStatus());
         }
@@ -120,7 +105,7 @@ public class TicketService {
             ticket.setQrCode(request.getQrCode());
         }
 
-        return toTicketResponse(ticketRepository.save(ticket));
+        return toTicketResponse(ticket);
     }
 
     public void deleteTicket(String ticketId) {

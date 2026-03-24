@@ -9,6 +9,7 @@ import com.ltweb.backend.entity.Showtime;
 
 @Mapper(componentModel = "spring")
 public interface ShowtimeMapper {
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "room", ignore = true)
     @Mapping(target = "film", ignore = true)
     @Mapping(target = "tickets", ignore = true)
@@ -16,6 +17,7 @@ public interface ShowtimeMapper {
     Showtime toShowtime(CreateShowtimeRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "room", ignore = true)
     @Mapping(target = "film", ignore = true)
     @Mapping(target = "tickets", ignore = true)

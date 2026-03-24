@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.ltweb.backend.enums.BookingStatus;
+import com.ltweb.backend.enums.PaymentMethod;
+import com.ltweb.backend.enums.PaymentStatus;
 
 import lombok.Builder;
 import lombok.Data;
@@ -31,7 +33,15 @@ public class BookingResponse {
 
     private LocalDateTime updatedAt;
 
-    private List<TicketResponse> tickets;
+    private PaymentMethod paymentMethod;
 
-    private PaymentResponse payment;
+    private PaymentStatus paymentStatus;
+
+    private String providerTxnId;
+
+    private LocalDateTime paidAt;
+
+    private LocalDateTime paymentCreatedAt;
+
+    private List<TicketResponse> tickets;
 }

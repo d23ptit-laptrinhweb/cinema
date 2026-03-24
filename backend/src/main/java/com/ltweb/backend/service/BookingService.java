@@ -3,8 +3,10 @@ package com.ltweb.backend.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.security.access.prepost.PostAuthorize;
@@ -16,7 +18,6 @@ import com.ltweb.backend.dto.request.UpdateBookingRequest;
 import com.ltweb.backend.dto.response.BookingResponse;
 import com.ltweb.backend.dto.response.TicketResponse;
 import com.ltweb.backend.entity.Booking;
-import com.ltweb.backend.entity.Seat;
 import com.ltweb.backend.entity.Showtime;
 import com.ltweb.backend.entity.Ticket;
 import com.ltweb.backend.entity.User;
@@ -26,8 +27,6 @@ import com.ltweb.backend.enums.TicketStatus;
 import com.ltweb.backend.exception.AppException;
 import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.repository.BookingRepository;
-import com.ltweb.backend.repository.PaymentRepository;
-import com.ltweb.backend.repository.SeatRepository;
 import com.ltweb.backend.repository.ShowtimeRepository;
 import com.ltweb.backend.repository.TicketRepository;
 import com.ltweb.backend.repository.UserRepository;
@@ -43,50 +42,41 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final ShowtimeRepository showtimeRepository;
-    private final SeatRepository seatRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
-    private final PaymentRepository paymentRepository;
 
     @Transactional
-    @PostAuthorize("returnObject.username == authentication.name")
     public BookingResponse createBooking(CreateBookingRequest request) {
-        // Get current user
         var context = SecurityContextHolder.getContext();
         String username = Objects.requireNonNull(context.getAuthentication()).getName();
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // Get showtime
         Showtime showtime = showtimeRepository.findById(request.getShowtimeId())
             .orElseThrow(() -> new AppException(ErrorCode.SHOWTIME_NOT_FOUND));
 
-        // Validate and get seats
-        List<Seat> selectedSeats = request.getSeatIds().stream()
-            .map(seatId -> seatRepository.findById(seatId)
-                .orElseThrow(() -> new AppException(ErrorCode.SEAT_NOT_FOUND)))
-            .toList();
-
-        // Get and validate existing tickets for selected seats
-        List<Ticket> ticketsToReserve = selectedSeats.stream()
-            .map(seat -> ticketRepository.findByShowtimeIdAndSeatId(
-                showtime.getId(), seat.getId()
-            )
-            .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND)))
-            .toList();
-
-        // Check if all tickets are available
-        for (Ticket ticket : ticketsToReserve) {
-            if (ticket.getTicketStatus() != TicketStatus.AVAILABLE) {
-                throw new AppException(ErrorCode.TICKET_ALREADY_EXISTS);
-            }
+        Set<String> uniqueSeatIds = new HashSet<>(request.getSeatIds());
+        if (uniqueSeatIds.size() != request.getSeatIds().size()) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
         }
 
-        // Calculate total amount
-        BigDecimal totalAmount = showtime.getBasePrice()
-            .multiply(new BigDecimal(selectedSeats.size()));
 
-        // Create booking
+        List<Ticket> selectedTickets = request.getSeatIds().stream()
+            .map(seatId -> ticketRepository.findByShowtimeIdAndSeatId(showtime.getId(), seatId)
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND)))
+            .toList();
+
+        boolean hasUnavailableTicket = selectedTickets.stream()
+            .anyMatch(ticket -> ticket.getTicketStatus() != TicketStatus.AVAILABLE);
+        if (hasUnavailableTicket) {
+            throw new AppException(ErrorCode.TICKET_NOT_AVAILABLE);
+        }
+
+
+        BigDecimal totalAmount = selectedTickets.stream()
+            .map(Ticket::getPrice)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         String bookingCode = generateBookingCode();
         Booking booking = Booking.builder()
             .bookingCode(bookingCode)
@@ -94,20 +84,21 @@ public class BookingService {
             .showtime(showtime)
             .totalAmount(totalAmount)
             .status(BookingStatus.PENDING)
-            .expiresAt(LocalDateTime.now().plusMinutes(15))
+            .paymentCreatedAt(LocalDateTime.now())
+            .paymentStatus(PaymentStatus.PENDING)
+            .expiresAt(LocalDateTime.now().plusMinutes(30))
             .build();
 
-        booking = bookingRepository.save(booking);
+        bookingRepository.save(booking);
 
-        // Update existing tickets: link to booking and change status to HOLDING
-        final Booking finalBooking = booking;
-        ticketsToReserve.forEach(ticket -> {
-            ticket.setBooking(finalBooking);
+
+        selectedTickets.forEach(ticket -> {
+            ticket.setBooking(booking);
             ticket.setTicketStatus(TicketStatus.HOLDING);
         });
+        ticketRepository.saveAll(selectedTickets);
+        booking.setTickets(selectedTickets);
 
-        ticketRepository.saveAll(ticketsToReserve);
-        booking.setTickets(ticketsToReserve);
 
         log.info("Booking created with code: {} for user: {}", bookingCode, username);
 
@@ -188,14 +179,9 @@ public class BookingService {
             ticketRepository.save(ticket);
         });
 
-        // Cancel any pending payment for this booking
-        var payments = paymentRepository.findByBookingId(bookingId);
-        if (!payments.isEmpty()) {
-            var payment = payments.get(0);
-            if (payment.getPaymentStatus() == PaymentStatus.PENDING) {
-                payment.setPaymentStatus(PaymentStatus.CANCELLED);
-                paymentRepository.save(payment);
-            }
+        if (booking.getPaymentStatus() == PaymentStatus.PENDING) {
+            booking.setPaymentStatus(PaymentStatus.CANCELLED);
+            bookingRepository.save(booking);
         }
 
         log.info("Booking cancelled: {}", bookingId);
@@ -219,6 +205,11 @@ public class BookingService {
             .expiresAt(booking.getExpiresAt())
             .createdAt(booking.getCreatedAt())
             .updatedAt(booking.getUpdatedAt())
+            .paymentMethod(booking.getPaymentMethod())
+            .paymentStatus(booking.getPaymentStatus())
+            .providerTxnId(booking.getProviderTxnId())
+            .paidAt(booking.getPaidAt())
+            .paymentCreatedAt(booking.getPaymentCreatedAt())
             .tickets(booking.getTickets().stream()
                 .map(ticket -> TicketResponse.builder()
                     .ticketId(ticket.getId())

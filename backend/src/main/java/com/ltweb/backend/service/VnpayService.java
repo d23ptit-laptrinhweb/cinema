@@ -12,12 +12,11 @@ import com.ltweb.backend.dto.request.QueryRequest;
 import com.ltweb.backend.dto.request.RefundRequest;
 import com.ltweb.backend.dto.response.ApiResponse;
 import com.ltweb.backend.entity.Booking;
-import com.ltweb.backend.entity.Payment;
 import com.ltweb.backend.enums.BookingStatus;
+import com.ltweb.backend.enums.PaymentMethod;
 import com.ltweb.backend.enums.PaymentStatus;
 import com.ltweb.backend.enums.TicketStatus;
 import com.ltweb.backend.repository.BookingRepository;
-import com.ltweb.backend.repository.PaymentRepository;
 import com.ltweb.backend.repository.TicketRepository;
 import com.ltweb.backend.util.VnpayUtil;
 import jakarta.transaction.Transactional;
@@ -37,7 +36,6 @@ public class VnpayService {
     private final VnpayProperties props;
     private final RestTemplate restTemplate;
     private final BookingRepository bookingRepository;
-    private final PaymentRepository paymentRepository;
     private final TicketRepository ticketRepository;
 
     private static final Map<String, String> RESPONSE_CODE_DESC = createResponseCodeDesc();
@@ -46,12 +44,10 @@ public class VnpayService {
     public VnpayService(VnpayProperties props,
                         RestTemplate restTemplate,
                         BookingRepository bookingRepository,
-                        PaymentRepository paymentRepository,
                         TicketRepository ticketRepository) {
         this.props = props;
         this.restTemplate = restTemplate;
         this.bookingRepository = bookingRepository;
-        this.paymentRepository = paymentRepository;
         this.ticketRepository = ticketRepository;
     }
 
@@ -272,29 +268,23 @@ public class VnpayService {
                 return rsp("04", "Invalid Amount");
             }
 
-            List<Payment> payments = paymentRepository.findByBookingId(booking.getId());
-            Payment payment = payments.isEmpty() ? null : payments.get(0);
-
-            if (booking.getStatus() == BookingStatus.CONFIRMED
-                    || (payment != null && payment.getPaymentStatus() == PaymentStatus.PAID)) {
-                return rsp("02", "Order already confirmed");
+            if (booking.getStatus() == BookingStatus.COMPLETED
+                    || booking.getPaymentStatus() == PaymentStatus.PAID) {
+                return rsp("02", "Order already completed");
             }
 
             boolean paymentSuccess = "00".equals(params.get("vnp_ResponseCode"))
                     && "00".equals(params.get("vnp_TransactionStatus"));
 
-            if (payment != null) {
-                payment.setProviderTxnId(params.get("vnp_TransactionNo"));
-                payment.setPaymentStatus(paymentSuccess ? PaymentStatus.PAID : PaymentStatus.CANCELLED);
-                if (paymentSuccess) {
-                    payment.setPaidAt(LocalDateTime.now());
-                }
-                paymentRepository.save(payment);
+            booking.setProviderTxnId(params.get("vnp_TransactionNo"));
+            booking.setPaymentStatus(paymentSuccess ? PaymentStatus.PAID : PaymentStatus.CANCELLED);
+            if (paymentSuccess) {
+                booking.setPaidAt(LocalDateTime.now());
             }
 
+            booking.setPaymentMethod(PaymentMethod.VNPAY);
             if (paymentSuccess) {
-                booking.setStatus(BookingStatus.CONFIRMED);
-                bookingRepository.save(booking);
+                booking.setStatus(BookingStatus.COMPLETED);
 
                 booking.getTickets().forEach(ticket -> {
                     ticket.setTicketStatus(TicketStatus.BOOKED);
@@ -302,7 +292,6 @@ public class VnpayService {
                 });
             } else {
                 booking.setStatus(BookingStatus.CANCELLED);
-                bookingRepository.save(booking);
 
                 booking.getTickets().forEach(ticket -> {
                     ticket.setBooking(null);
@@ -310,6 +299,8 @@ public class VnpayService {
                     ticketRepository.save(ticket);
                 });
             }
+
+            bookingRepository.save(booking);
 
             return rsp("00", "Confirm Success");
         } catch (Exception e) {

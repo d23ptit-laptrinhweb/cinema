@@ -15,6 +15,7 @@ public interface SeatMapper {
     Seat toSeat(CreateSeatRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "room",ignore = true)
     @Mapping(target = "tickets", ignore = true)
     void updateSeat(@MappingTarget Seat seat, UpdateSeatRequest request);

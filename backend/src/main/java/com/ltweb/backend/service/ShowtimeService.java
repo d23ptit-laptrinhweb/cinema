@@ -44,11 +44,11 @@ public class ShowtimeService {
         Showtime showtime = showtimeMapper.toShowtime(request);
         showtime.setRoom(room);
         showtime.setFilm(film);
-        
-        ticketService.createTicket(showtime);
-        
-        showtimeRepository.save(showtime);
-        return showtimeMapper.toResponse(showtime);
+
+        Showtime savedShowtime = showtimeRepository.save(showtime);
+        ticketService.createTicket(savedShowtime);
+
+        return showtimeMapper.toResponse(savedShowtime);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

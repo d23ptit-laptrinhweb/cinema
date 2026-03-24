@@ -17,7 +17,8 @@ public enum ErrorCode {
     ACCESS_DENIED(403, "Access denied", HttpStatus.FORBIDDEN),
     TOKEN_INVALID(401, "Invalid JWT token", HttpStatus.UNAUTHORIZED),
     TOKEN_SIGNING_FAILED(500, "Failed to sign JWT token", HttpStatus.INTERNAL_SERVER_ERROR),
-    
+    OTP_INVALID(401, "Invalid OTP", HttpStatus.UNAUTHORIZED),
+    PASSWORD_INCORRECT(401, "Password incorrect", HttpStatus.UNAUTHORIZED),
     // User Management
     USER_EXISTED(400, "User already exists", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(400, "User does not exist", HttpStatus.BAD_REQUEST),
@@ -51,6 +52,7 @@ public enum ErrorCode {
     // Ticket Management
     TICKET_NOT_FOUND(400, "Ticket does not exist", HttpStatus.BAD_REQUEST),
     TICKET_ALREADY_EXISTS(400, "Ticket already exists for this showtime and seat", HttpStatus.BAD_REQUEST),
+    TICKET_NOT_AVAILABLE(400, "One or more selected tickets are not available", HttpStatus.BAD_REQUEST),
 
     // Payment Management
     PAYMENT_NOT_FOUND(400, "Payment does not exist", HttpStatus.BAD_REQUEST),

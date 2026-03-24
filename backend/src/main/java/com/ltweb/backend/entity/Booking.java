@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ltweb.backend.enums.BookingStatus;
+import com.ltweb.backend.enums.PaymentMethod;
+import com.ltweb.backend.enums.PaymentStatus;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -62,6 +64,18 @@ public class Booking {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus;
+
+    private String providerTxnId;
+
+    private LocalDateTime paidAt;
+
+    private LocalDateTime paymentCreatedAt;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

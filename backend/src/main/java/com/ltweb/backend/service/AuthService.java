@@ -16,9 +16,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
 import java.util.Date;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -28,6 +32,9 @@ public class AuthService {
     private final JwtService jwtService;
     private final RedisTokenRepository redisTokenRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final OTPService otpService;
+    private final EmailService emailService;
 
     public LoginResponse login(LoginRequest  loginRequest) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword());
@@ -62,7 +69,7 @@ public class AuthService {
         SignedJWT signedJWT;
         try {
             signedJWT = SignedJWT.parse(token);
-        } catch (java.text.ParseException e) {
+        } catch (ParseException e) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
         }
 
@@ -73,10 +80,9 @@ public class AuthService {
         String username;
         try {
             username = signedJWT.getJWTClaimsSet().getSubject();
-        } catch (java.text.ParseException e) {
+        } catch (ParseException e) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
         }
-
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -102,5 +108,42 @@ public class AuthService {
                 .accessToken(accessPayload.getToken())
                 .refreshToken(refreshPayload.getToken())
                 .build();
+    }
+
+    public void changePassword(String currentPassword, String newPassword) {
+        var context = SecurityContextHolder.getContext();
+        String username = Objects.requireNonNull(context.getAuthentication()).getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_INCORRECT);
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public void forgotPassword(String email) {
+        if(userRepository.existsByEmail(email)) throw new AppException(ErrorCode.USER_NOT_FOUND);
+
+        String otp = otpService.generateOTP(email);
+
+        otpService.saveOTP(email, otp);
+        emailService.sendOtp(email, otp);
+    }
+
+    public void resetPassword(String email, String otp, String newPassword) {
+        if (!otpService.checkOTP(email, otp)) {
+            throw new AppException(ErrorCode.OTP_INVALID);
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        otpService.deleteOTP(email, otp);
     }
 }
