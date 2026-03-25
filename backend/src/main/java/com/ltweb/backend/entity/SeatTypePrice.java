@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "showtime_seat_type_prices")
+@Table(name = "seat_type_prices")
 @Getter
 @Setter
 @NoArgsConstructor

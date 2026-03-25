@@ -19,6 +19,11 @@ public enum ErrorCode {
     TOKEN_SIGNING_FAILED(500, "Failed to sign JWT token", HttpStatus.INTERNAL_SERVER_ERROR),
     OTP_INVALID(401, "Invalid OTP", HttpStatus.UNAUTHORIZED),
     PASSWORD_INCORRECT(401, "Password incorrect", HttpStatus.UNAUTHORIZED),
+
+    //Price
+    SEATTYPE_EXIST(401, "Seat type already exist", HttpStatus.BAD_REQUEST),
+    SEATTYPE_NOT_EXIST(401, "Seat type does not exist", HttpStatus.BAD_REQUEST),
+    
     // User Management
     USER_EXISTED(400, "User already exists", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(400, "User does not exist", HttpStatus.BAD_REQUEST),
