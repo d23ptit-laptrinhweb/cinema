@@ -1,6 +1,5 @@
 package com.ltweb.backend.dto.response;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.ltweb.backend.enums.ShowtimeStatus;
@@ -16,6 +15,5 @@ public class ShowtimeResponse {
     private String filmId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private BigDecimal basePrice;
     private ShowtimeStatus status;
 }

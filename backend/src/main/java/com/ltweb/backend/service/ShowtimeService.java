@@ -11,12 +11,15 @@ import com.ltweb.backend.dto.response.ShowtimeResponse;
 import com.ltweb.backend.entity.Film;
 import com.ltweb.backend.entity.Room;
 import com.ltweb.backend.entity.Showtime;
+import com.ltweb.backend.exception.AppException;
+import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.mapper.ShowtimeMapper;
 import com.ltweb.backend.repository.FilmRepository;
 import com.ltweb.backend.repository.RoomRepository;
 import com.ltweb.backend.repository.ShowtimeRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,16 +32,17 @@ public class ShowtimeService {
     private final TicketService ticketService;
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public ShowtimeResponse create(CreateShowtimeRequest request) {
 
         Room room = roomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new RuntimeException("Room not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
         Film film = filmRepository.findById(request.getFilmId())
-                .orElseThrow(() -> new RuntimeException("Film not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));
 
         if (showtimeRepository.existsOverlappingShowtime(request.getRoomId(), request.getStartTime(), request.getEndTime())) {
-            throw new RuntimeException("Time overlap");
+            throw new AppException(ErrorCode.SHOWTIME_TIME_OVERLAP);
         }
 
         Showtime showtime = showtimeMapper.toShowtime(request);

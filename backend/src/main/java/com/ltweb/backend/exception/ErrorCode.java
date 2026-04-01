@@ -49,6 +49,7 @@ public enum ErrorCode {
 
     // Showtime Management
     SHOWTIME_NOT_FOUND(400, "Showtime does not exist", HttpStatus.BAD_REQUEST),
+    SHOWTIME_TIME_OVERLAP(400, "Showtime time overlaps with an existing schedule", HttpStatus.BAD_REQUEST),
 
     // Booking Management
     BOOKING_NOT_FOUND(400, "Booking does not exist", HttpStatus.BAD_REQUEST),
@@ -63,8 +64,8 @@ public enum ErrorCode {
     PAYMENT_NOT_FOUND(400, "Payment does not exist", HttpStatus.BAD_REQUEST),
     INVALID_PAYMENT_STATUS(400, "Invalid payment status for this operation", HttpStatus.BAD_REQUEST),
 
-    //Sign up
-    DATA_INTEGRITY_VIOLATION(400, "Username or email already existed!", HttpStatus.BAD_REQUEST)
+    // Database
+    DATA_INTEGRITY_VIOLATION(400, "Database constraint violated", HttpStatus.BAD_REQUEST)
     ;
     private final int code;
     private final String message;

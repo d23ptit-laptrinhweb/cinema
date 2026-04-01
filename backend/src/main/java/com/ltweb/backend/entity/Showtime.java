@@ -1,6 +1,5 @@
 package com.ltweb.backend.entity;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,8 +37,6 @@ public class Showtime {
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;
-
-    private BigDecimal basePrice;
 
     @Enumerated(EnumType.STRING)
     private ShowtimeStatus status;

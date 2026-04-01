@@ -38,11 +38,12 @@ public class TicketService {
         List<Seat> seats = seatRepository.findByRoomId(showtime.getRoom().getId());
 
         List<Ticket> tickets = seats.stream().map(seat->{
-            var seatTypePrice = seatTypePriceRepository.findBySeatType(seat.getSeatType());
+            var seatTypePrice = seatTypePriceRepository.findBySeatType(seat.getSeatType())
+                .orElseThrow(() -> new AppException(ErrorCode.SEATTYPE_NOT_EXIST));
             return Ticket.builder()
             .showtime(showtime)
             .seat(seat)
-            .price(seatTypePrice.map(price -> price.getPrice()).orElse(showtime.getBasePrice()))
+            .price(seatTypePrice.getPrice())
             .ticketStatus(TicketStatus.AVAILABLE)
             .build();
         }

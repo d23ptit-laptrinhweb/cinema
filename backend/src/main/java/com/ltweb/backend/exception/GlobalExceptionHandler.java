@@ -105,9 +105,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
              DataIntegrityViolationException exception, WebRequest request) {
+         String detailedMessage = exception.getMostSpecificCause() != null
+                 ? exception.getMostSpecificCause().getMessage()
+                 : ErrorCode.DATA_INTEGRITY_VIOLATION.getMessage();
 
-         ErrorResponse response = buildErrorCodeResponse(
-                 ErrorCode.DATA_INTEGRITY_VIOLATION, request);
+         ErrorResponse response = ErrorResponse.builder()
+                 .timestamp(new Date())
+                 .code(ErrorCode.DATA_INTEGRITY_VIOLATION.getCode())
+                 .error(ErrorCode.DATA_INTEGRITY_VIOLATION.getStatus().getReasonPhrase())
+                 .message(detailedMessage)
+                 .path(request.getDescription(false).replace("uri=", ""))
+                 .build();
          return ResponseEntity.badRequest().body(response);
      }
 
