@@ -2,6 +2,7 @@ package com.ltweb.backend.service;
 
 import com.ltweb.backend.dto.request.CreateUserRequest;
 import com.ltweb.backend.dto.request.UpdateUserRequest;
+import com.ltweb.backend.dto.response.PageResponse;
 import com.ltweb.backend.dto.response.UserResponse;
 import com.ltweb.backend.entity.User;
 import com.ltweb.backend.enums.UserRole;
@@ -14,14 +15,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +37,12 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public UserResponse createUser(CreateUserRequest createUserRequest) {
+        if(userRepository.existsByUsername(createUserRequest.getUsername())){
+            throw new AppException(ErrorCode.USER_EXISTED);
+        }
+        if(userRepository.existsByEmail(createUserRequest.getEmail())){
+            throw new AppException(ErrorCode.USER_EXISTED);
+        }
         User user = userMapper.toUser(createUserRequest);
         user.setRole(UserRole.USER);
         user.setStatus(UserStatus.ACTIVE);
@@ -41,9 +52,52 @@ public class UserService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    public Page<UserResponse> getAllUser(Pageable pageable){
-        return userRepository.findAll(pageable)
+    public PageResponse<List<UserResponse>> searchUsers(String username, String email, String phone, Pageable pageable){
+        Specification<User> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (StringUtils.hasText(username)) {
+                predicates.add(
+                    criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("username")),
+                        "%" + username.trim().toLowerCase() + "%"
+                    )
+                );
+            }
+
+            if (StringUtils.hasText(email)) {
+                predicates.add(
+                    criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("email")),
+                        "%" + email.trim().toLowerCase() + "%"
+                    )
+                );
+            }
+
+            if (StringUtils.hasText(phone)) {
+                predicates.add(
+                    criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("phoneNumber")),
+                        "%" + phone.trim().toLowerCase() + "%"
+                    )
+                );
+            }
+
+            return predicates.isEmpty()
+                ? criteriaBuilder.conjunction()
+                : criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        var usersPage = userRepository.findAll(specification, pageable)
             .map(userMapper::toUserResponse);
+
+        return new PageResponse<>(
+            usersPage.getContent(),
+            usersPage.getNumber() + 1,
+            usersPage.getSize(),
+            usersPage.getTotalElements(),
+            usersPage.getTotalPages()
+        );
     }
 
     @PreAuthorize("hasRole('ADMIN')")

@@ -1,7 +1,7 @@
 package com.ltweb.backend.controller;
 
+import java.util.List;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ltweb.backend.dto.request.CreateUserRequest;
 import com.ltweb.backend.dto.request.UpdateUserRequest;
 import com.ltweb.backend.dto.response.ApiResponse;
+import com.ltweb.backend.dto.response.PageResponse;
 import com.ltweb.backend.dto.response.UserResponse;
 import com.ltweb.backend.service.UserService;
 
@@ -37,19 +38,18 @@ public class UserController {
     }
 
     @GetMapping("/users")
-    public ApiResponse<Page<UserResponse>> getAllUser(
+    public ApiResponse<PageResponse<List<UserResponse>>> searchUsers(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir){
-        Sort sort = "desc".equalsIgnoreCase(sortDir)
-                ? Sort.by(sortBy).descending()
-                : Sort.by(sortBy).ascending();
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String phone){
+        Sort sort = Sort.by("createdAt").descending();
         int pageIndex = Math.max(page - 1, 0);
         Pageable pageable = PageRequest.of(pageIndex, size, sort);
 
-        ApiResponse<Page<UserResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(userService.getAllUser(pageable));
+        ApiResponse<PageResponse<List<UserResponse>>> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(userService.searchUsers(username, email, phone, pageable));
         return apiResponse;
     }
 
