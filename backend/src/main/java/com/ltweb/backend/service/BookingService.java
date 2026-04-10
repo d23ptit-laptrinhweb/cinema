@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,7 @@ public class BookingService {
     private final ShowtimeRepository showtimeRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest request) {
@@ -68,10 +71,22 @@ public class BookingService {
 
         boolean hasUnavailableTicket = selectedTickets.stream()
             .anyMatch(ticket -> ticket.getTicketStatus() != TicketStatus.AVAILABLE);
+
         if (hasUnavailableTicket) {
             throw new AppException(ErrorCode.TICKET_NOT_AVAILABLE);
         }
 
+        // khoá ghế bằng Redis
+        String bookingUserId = user.getId();
+        for (Ticket ticket : selectedTickets) {
+            String seatKey = getSeatKey(showtime.getId(), ticket.getSeat().getId());
+            Boolean locked = redisTemplate.opsForValue().setIfAbsent(seatKey, bookingUserId, 6, TimeUnit.MINUTES);
+
+            if (Boolean.FALSE.equals(locked)) {
+                unlockSeats(showtime.getId(), selectedTickets);
+                throw new AppException(ErrorCode.TICKET_NOT_AVAILABLE);
+            }
+        }
 
         BigDecimal totalAmount = selectedTickets.stream()
             .map(Ticket::getPrice)
@@ -179,6 +194,8 @@ public class BookingService {
             ticketRepository.save(ticket);
         });
 
+        unlockSeats(booking.getShowtime().getId(), booking.getTickets());
+
         if (booking.getPaymentStatus() == PaymentStatus.PENDING) {
             booking.setPaymentStatus(PaymentStatus.CANCELLED);
             bookingRepository.save(booking);
@@ -222,5 +239,20 @@ public class BookingService {
                     .build())
                 .toList())
             .build();
+    }
+
+    private String getSeatKey(String showTimeId, String seatId) {
+        return "seat_hold:" + showTimeId + ":" + seatId;
+    }
+
+    private void unlockSeats(String showTimeId, List<Ticket> tickets) {
+        try {
+            List<String> keys = tickets.stream()
+                    .map(ticket -> getSeatKey(showTimeId, ticket.getSeat().getId()))
+                    .toList();
+            redisTemplate.delete(keys);
+        } catch (Exception e) {
+            log.error("Thất bại trong việc xoá vé: {}", e.getMessage());
+        }
     }
 }
