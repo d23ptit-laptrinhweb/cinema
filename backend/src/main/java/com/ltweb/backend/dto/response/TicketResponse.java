@@ -21,7 +21,16 @@ public class TicketResponse {
 
     private BigDecimal price;
 
+    /** Trạng thái raw trong DB */
     private TicketStatus ticketStatus;
+
+    /**
+     * Trạng thái hiển thị cho frontend, kết hợp DB + Redis seat lock.
+     * - AVAILABLE : ghế trống, có thể chọn
+     * - HOLDING : đang bị khóa tạm thời bởi user khác (Redis)
+     * - BOOKED : đã thanh toán thành công
+     */
+    private TicketStatus displayStatus;
 
     private String qrCode;
 }

@@ -2,6 +2,9 @@ package com.ltweb.backend.service;
 
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -27,7 +30,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class VnpayService {
 
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -37,19 +42,10 @@ public class VnpayService {
     private final RestTemplate restTemplate;
     private final BookingRepository bookingRepository;
     private final TicketRepository ticketRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
     private static final Map<String, String> RESPONSE_CODE_DESC = createResponseCodeDesc();
     private static final Map<String, String> TRANSACTION_STATUS_DESC = createTransactionStatusDesc();
-
-    public VnpayService(VnpayProperties props,
-                        RestTemplate restTemplate,
-                        BookingRepository bookingRepository,
-                        TicketRepository ticketRepository) {
-        this.props = props;
-        this.restTemplate = restTemplate;
-        this.bookingRepository = bookingRepository;
-        this.ticketRepository = ticketRepository;
-    }
 
     public Map<String, Object> createPaymentUrl(CreateVnpayRequest req, HttpServletRequest request) {
         String vnpVersion = "2.1.0";
@@ -302,10 +298,20 @@ public class VnpayService {
 
             bookingRepository.save(booking);
 
-            return rsp("00", "Confirm Success");
+            try {
+                List<String> keys = booking.getTickets().stream()
+                        .map(ticket -> "seat_hold:" + booking.getShowtime().getId() + ":" + ticket.getSeat().getId())
+                        .toList();
+                redisTemplate.delete(keys);
+                return rsp("00", "Confirm Success");
+            } catch (Exception ex) {
+                log.error("Xoá key thất bai: {}", ex.getMessage());
+            }
+
         } catch (Exception e) {
             return rsp("99", "Unknown error");
         }
+        return params;
     }
 
     private Map<String, String> rsp(String code, String message) {
