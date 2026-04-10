@@ -1,11 +1,13 @@
 package com.ltweb.backend.service;
 
 
+import com.ltweb.backend.dto.response.SeatStatusEvent;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -43,6 +45,7 @@ public class VnpayService {
     private final BookingRepository bookingRepository;
     private final TicketRepository ticketRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
     private static final Map<String, String> RESPONSE_CODE_DESC = createResponseCodeDesc();
     private static final Map<String, String> TRANSACTION_STATUS_DESC = createTransactionStatusDesc();
@@ -285,6 +288,13 @@ public class VnpayService {
                 booking.getTickets().forEach(ticket -> {
                     ticket.setTicketStatus(TicketStatus.BOOKED);
                     ticketRepository.save(ticket);
+                    simpMessagingTemplate.convertAndSend(
+                            "/topic/showtime/" + ticket.getShowtime().getId() + "/seats",
+                            SeatStatusEvent.builder()
+                                    .seatId(ticket.getSeat().getId())
+                                    .status("BOOKED")
+                                    .build()
+                    );
                 });
             } else {
                 booking.setStatus(BookingStatus.CANCELLED);
@@ -293,6 +303,13 @@ public class VnpayService {
                     ticket.setBooking(null);
                     ticket.setTicketStatus(TicketStatus.AVAILABLE);
                     ticketRepository.save(ticket);
+                    simpMessagingTemplate.convertAndSend(
+                            "/topic/showtime/" + ticket.getShowtime().getId() + "/seats",
+                            SeatStatusEvent.builder()
+                                    .seatId(ticket.getSeat().getId())
+                                    .status("AVAILABLE")
+                                    .build()
+                    );
                 });
             }
 

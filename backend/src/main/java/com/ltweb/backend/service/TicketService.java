@@ -89,6 +89,7 @@ public class TicketService {
             }
 
             // Kiểm tra Redis: có key seat_hold -> ghế đang bị giữ bởi user khác
+            // check lại cả redis để xác định xem có đúng vé đang bị HOLDING ko
             boolean isHeldInRedis = redisHoldStatus != null && redisHoldStatus.get(i) != null;
 
             if (isHeldInRedis) {
