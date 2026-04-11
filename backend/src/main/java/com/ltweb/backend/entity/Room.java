@@ -13,8 +13,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -28,7 +26,7 @@ import lombok.Setter;
 @Table(
     name = "rooms",
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"branch_id", "code"})
+        @UniqueConstraint(columnNames = {"code"})
     }
 )
 @Getter
@@ -61,8 +59,4 @@ public class Room {
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Showtime> showtimes = new ArrayList<>();
-
-    @ManyToOne()
-    @JoinColumn(name = "branch_id", nullable = false)
-    private Branch branch;
 }

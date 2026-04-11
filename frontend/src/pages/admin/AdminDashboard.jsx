@@ -2,17 +2,14 @@ import { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 import {
   FilmIcon,
-  BuildingOfficeIcon,
   UsersIcon,
   TicketIcon,
-  CurrencyDollarIcon,
   ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
     films: 0,
-    branches: 0,
     bookings: 0,
     users: 0,
   });
@@ -22,16 +19,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [filmsRes, branchesRes, bookingsRes, usersRes] = await Promise.allSettled([
+        const [filmsRes, bookingsRes, usersRes] = await Promise.allSettled([
           axiosClient.get('/film'),
-          axiosClient.get('/branch'),
           axiosClient.get('/booking'),
           axiosClient.get('/users?page=1&size=1'),
         ]);
 
         setStats({
           films: filmsRes.status === 'fulfilled' ? (filmsRes.value?.length || 0) : 0,
-          branches: branchesRes.status === 'fulfilled' ? (branchesRes.value?.length || 0) : 0,
           bookings: bookingsRes.status === 'fulfilled' ? (bookingsRes.value?.length || 0) : 0,
           users: usersRes.status === 'fulfilled' ? (usersRes.value?.totalElements || 0) : 0,
         });
@@ -58,7 +53,6 @@ export default function AdminDashboard() {
 
   const cards = [
     { title: 'Phim', value: stats.films, icon: FilmIcon, color: 'from-violet-500 to-purple-600', bg: 'bg-violet-500/10' },
-    { title: 'Chi nhánh', value: stats.branches, icon: BuildingOfficeIcon, color: 'from-sky-500 to-cyan-600', bg: 'bg-sky-500/10' },
     { title: 'Đơn đặt vé', value: stats.bookings, icon: TicketIcon, color: 'from-rose-500 to-pink-600', bg: 'bg-rose-500/10' },
     { title: 'Người dùng', value: stats.users, icon: UsersIcon, color: 'from-amber-500 to-orange-600', bg: 'bg-amber-500/10' },
   ];

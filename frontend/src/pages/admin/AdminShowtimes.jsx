@@ -7,7 +7,6 @@ export default function AdminShowtimes() {
   const [showtimes, setShowtimes] = useState([]);
   const [films, setFilms] = useState([]);
   const [rooms, setRooms] = useState([]);
-  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -20,13 +19,11 @@ export default function AdminShowtimes() {
 
   const fetchData = async () => {
     try {
-      const [filmsRes, branchesRes, roomsRes] = await Promise.allSettled([
+      const [filmsRes, roomsRes] = await Promise.allSettled([
         axiosClient.get('/film'),
-        axiosClient.get('/branch'),
         axiosClient.get('/room'),
       ]);
       setFilms(filmsRes.status === 'fulfilled' ? filmsRes.value || [] : []);
-      setBranches(branchesRes.status === 'fulfilled' ? branchesRes.value || [] : []);
       setRooms(roomsRes.status === 'fulfilled' ? roomsRes.value || [] : []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -84,7 +81,7 @@ export default function AdminShowtimes() {
     } catch (err) { alert('Lỗi: ' + (err?.message || JSON.stringify(err))); }
   };
 
-  const getRoomName = (roomId) => rooms.find(r => r.roomId === roomId)?.name || roomId;
+  const getRoomName = (roomId) => rooms.find(r => r.id === roomId)?.name || roomId;
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div></div>;
 
@@ -153,7 +150,7 @@ export default function AdminShowtimes() {
                 <label className="block text-sm text-slate-400 mb-1">Phòng chiếu *</label>
                 <select required className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-rose-500" value={formData.roomId} onChange={e => setFormData({ ...formData, roomId: e.target.value })}>
                   <option value="">-- Chọn phòng --</option>
-                  {rooms.map(r => <option key={r.roomId} value={r.roomId}>{r.name}</option>)}
+                  {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">

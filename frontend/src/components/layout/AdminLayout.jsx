@@ -3,10 +3,11 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import {
   FilmIcon,
-  BuildingOfficeIcon,
+  RectangleGroupIcon,
   UsersIcon,
   TicketIcon,
   ClockIcon,
+  CurrencyDollarIcon,
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
@@ -17,8 +18,9 @@ import {
 const menuItems = [
   { name: 'Tổng quan', path: '/admin', icon: ChartBarIcon },
   { name: 'Quản lý phim', path: '/admin/films', icon: FilmIcon },
+  { name: 'Phòng chiếu', path: '/admin/rooms', icon: RectangleGroupIcon },
+  { name: 'Giá loại ghế', path: '/admin/seat-type-prices', icon: CurrencyDollarIcon },
   { name: 'Thể loại', path: '/admin/genres', icon: TagIcon },
-  { name: 'Chi nhánh', path: '/admin/branches', icon: BuildingOfficeIcon },
   { name: 'Suất chiếu', path: '/admin/showtimes', icon: ClockIcon },
   { name: 'Đơn đặt vé', path: '/admin/bookings', icon: TicketIcon },
   { name: 'Người dùng', path: '/admin/users', icon: UsersIcon },

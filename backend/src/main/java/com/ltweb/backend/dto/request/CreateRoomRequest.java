@@ -33,7 +33,4 @@ public class CreateRoomRequest {
     @Min(value = 1, message = "Seat capacity must be at least 1")
     private Integer seatCapacity;
     private RoomStatus status;
-
-    @NotBlank(message = "Branch id is required")
-    private String branchId;
 }

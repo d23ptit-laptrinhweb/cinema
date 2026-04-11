@@ -80,7 +80,6 @@ public class ShowtimeService {
                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public List<ShowtimeResponse> getByRoom(Long roomId) {
         return showtimeRepository.findByRoomId(roomId)
                 .stream()

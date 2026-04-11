@@ -27,5 +27,4 @@ public class UpdateRoomRequest {
     @Min(value = 1, message = "Seat capacity must be at least 1")
     private Integer seatCapacity;
     private RoomStatus status;
-    private String branchId;
 }

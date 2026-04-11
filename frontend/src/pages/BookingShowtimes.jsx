@@ -11,7 +11,6 @@ export default function BookingShowtimes() {
   
   const [film, setFilm] = useState(null);
   const [showtimes, setShowtimes] = useState([]);
-  const [branches, setBranches] = useState([]);
   const [rooms, setRooms] = useState([]);
   
   const [loading, setLoading] = useState(true);
@@ -30,16 +29,14 @@ export default function BookingShowtimes() {
 
     const fetchData = async () => {
       try {
-        const [filmRes, showtimeRes, branchRes, roomRes] = await Promise.all([
+        const [filmRes, showtimeRes, roomRes] = await Promise.all([
           axiosClient.get(`/film/${filmId}`).catch(() => null),
           axiosClient.get(`/showtime/film/${filmId}`).catch(() => []),
-          axiosClient.get(`/branch`).catch(() => []),
           axiosClient.get(`/room`).catch(() => [])
         ]);
         
         setFilm(filmRes);
         setShowtimes(showtimeRes || []);
-        setBranches(branchRes || []);
         setRooms(roomRes || []);
       } catch (error) {
         console.error('Failed to fetch data for booking', error);
@@ -63,27 +60,24 @@ export default function BookingShowtimes() {
     return <div className="text-center text-white py-20">Không tìm thấy thông tin phim</div>;
   }
 
-  // Filter showtimes by selected Date
-  const showtimesOnDate = showtimes.filter(st => {
-    const stDate = parseISO(st.startTime);
-    return isSameDay(stDate, selectedDate);
+  // Filter showtimes by selected Date and sort by time
+  const showtimesOnDate = showtimes
+    .filter(st => {
+      const stDate = parseISO(st.startTime);
+      return isSameDay(stDate, selectedDate);
+    })
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+  // Create a map of room info for quick lookup
+  const roomMap = {};
+  rooms.forEach(room => {
+    roomMap[room.id] = room;
   });
 
-  // Group by Branch
-  const branchesWithShowtimes = branches.map(branch => {
-    // Find rooms in this branch
-    const branchRooms = rooms.filter(r => r.branchId === branch.branchId);
-    const roomIds = branchRooms.map(r => r.id);
-    
-    // Find showtimes in these rooms
-    const sts = showtimesOnDate.filter(st => roomIds.includes(st.roomId));
-    
-    return {
-      ...branch,
-      showtimes: sts.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
-      branchRooms
-    };
-  }).filter(b => b.showtimes.length > 0);
+  const getRoomTypeLabel = (type) => {
+    const labels = { TWO_D: '2D', THREE_D: '3D', IMAX: 'IMAX' };
+    return labels[type] || type;
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -126,47 +120,40 @@ export default function BookingShowtimes() {
         })}
       </div>
 
-      {/* Showtimes by Branch */}
+      {/* Showtimes List */}
       <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
         <MapPinIcon className="w-6 h-6 text-rose-500" />
-        Chọn Rạp & Suất Chiếu
+        Chọn Suất Chiếu
       </h2>
       
-      {branchesWithShowtimes.length === 0 ? (
+      {showtimesOnDate.length === 0 ? (
         <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-12 text-center text-slate-400">
           Không có suất chiếu nào vào ngày này. Vui lòng chọn ngày khác!
         </div>
       ) : (
-        <div className="space-y-6">
-          {branchesWithShowtimes.map(branch => (
-            <div key={branch.branchId} className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
-              <div className="bg-slate-900/50 p-4 border-b border-slate-700">
-                <h3 className="text-lg font-bold text-white">{branch.name}</h3>
-                <p className="text-sm text-slate-400 mt-1">{branch.address}</p>
-              </div>
-              <div className="p-6">
-                <div className="flex flex-wrap gap-4">
-                  {branch.showtimes.map(st => {
-                    const room = branch.branchRooms.find(r => r.id === st.roomId);
-                    return (
-                      <button
-                        key={st.showtimeId}
-                        onClick={() => navigate(`/booking/seat/${st.showtimeId}`)}
-                        className="group flex flex-col items-center bg-slate-900 border border-slate-700 hover:border-rose-500 rounded-lg p-3 transition-all hover:shadow-lg hover:shadow-rose-500/20"
-                      >
-                        <span className="text-xl font-bold text-white group-hover:text-rose-400 transition-colors">
-                          {format(parseISO(st.startTime), 'HH:mm')}
-                        </span>
-                        <span className="text-xs text-slate-400 mt-1">
-                          {room ? room.name : 'Phòng chiếu'}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {showtimesOnDate.map(st => {
+            const room = roomMap[st.roomId];
+            return (
+              <button
+                key={st.showtimeId}
+                onClick={() => navigate(`/booking/seat/${st.showtimeId}`)}
+                className="group flex flex-col items-center bg-slate-800 border border-slate-700 hover:border-rose-500 rounded-xl p-4 transition-all hover:shadow-lg hover:shadow-rose-500/20 hover:bg-slate-700"
+              >
+                <span className="text-2xl font-bold text-white group-hover:text-rose-400 transition-colors">
+                  {format(parseISO(st.startTime), 'HH:mm')}
+                </span>
+                {room && (
+                  <>
+                    <p className="text-xs text-slate-400 mt-2">{room.name}</p>
+                    <span className="text-xs font-semibold text-rose-400 mt-1 bg-rose-400/10 px-2 py-1 rounded">
+                      {getRoomTypeLabel(room.roomType)}
+                    </span>
+                  </>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

@@ -7,17 +7,19 @@ import BookingShowtimes from './pages/BookingShowtimes';
 import BookingSeat from './pages/BookingSeat';
 import Checkout from './pages/Checkout';
 import PaymentReturn from './pages/PaymentReturn';
+import PaymentConfirmation from './pages/PaymentConfirmation';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminFilms from './pages/admin/AdminFilms';
-import AdminBranches from './pages/admin/AdminBranches';
+import AdminRooms from './pages/admin/AdminRooms';
 import AdminShowtimes from './pages/admin/AdminShowtimes';
 import AdminBookings from './pages/admin/AdminBookings';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminGenres from './pages/admin/AdminGenres';
+import AdminSeatTypePrices from './pages/admin/AdminSeatTypePrices';
 
 function App() {
   return (
@@ -31,6 +33,7 @@ function App() {
           <Route path="booking/seat/:showtimeId" element={<BookingSeat />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="v1/vnpay/return" element={<PaymentReturn />} />
+          <Route path="payment/confirmation" element={<PaymentConfirmation />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
           <Route path="profile" element={<Profile />} />
@@ -41,7 +44,8 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="films" element={<AdminFilms />} />
-          <Route path="branches" element={<AdminBranches />} />
+          <Route path="rooms" element={<AdminRooms />} />
+          <Route path="seat-type-prices" element={<AdminSeatTypePrices />} />
           <Route path="showtimes" element={<AdminShowtimes />} />
           <Route path="bookings" element={<AdminBookings />} />
           <Route path="users" element={<AdminUsers />} />

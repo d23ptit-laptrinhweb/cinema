@@ -32,8 +32,6 @@ public enum ErrorCode {
     VALIDATION_ERROR(400, "Request validation failed", HttpStatus.BAD_REQUEST),
     MISSING_REQUEST_HEADER(400, "Required request header is missing", HttpStatus.BAD_REQUEST),
     TOO_MANY_REQUESTS(429, "Too many requests", HttpStatus.TOO_MANY_REQUESTS),
-    // Branch Management
-    BRANCH_NOT_FOUND(400, "Branch does not exist", HttpStatus.BAD_REQUEST),
 
     // Room Management
     ROOM_NOT_FOUND(400, "Room does not exist", HttpStatus.BAD_REQUEST),

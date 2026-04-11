@@ -44,13 +44,12 @@ export default function Checkout() {
       });
 
       if (bookingRes && bookingRes.bookingId) {
+        const orderId = bookingRes.bookingCode || bookingRes.bookingId;
+
         // 2. Request VNPay URL
-        // backend expects amount as Long representing VND. Some APIs require amount * 100 for VNPay. 
-        // We will pass the exact amount, assuming backend VnpayService handles the * 100 correctly, or we do it here.
-        // Let's pass the amount. The standard VNPay takes amount * 100, but in `CreateVnpayRequest` it's just `amount`. Let's assume backend multiplies by 100.
         const vnpayRes = await axiosClient.post('/v1/vnpay/payment-url', {
           amount: totalAmount,
-          orderId: bookingRes.bookingId,
+          orderId,
           orderInfo: `Thanh toan ve phim ${film.filmName}`,
           orderType: "bill",
           language: "vn"
@@ -150,7 +149,6 @@ export default function Checkout() {
                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
               ) : (
                 <>
-                  <CheckCircleIcon className="w-6 h-6" />
                   Thanh Toán VNPay
                 </>
               )}

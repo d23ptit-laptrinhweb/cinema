@@ -21,5 +21,4 @@ public class RoomResponse {
     private RoomType roomType;
     private Integer seatCapacity;
     private RoomStatus status;
-    private String branchId;
 }

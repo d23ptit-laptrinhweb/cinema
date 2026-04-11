@@ -24,9 +24,7 @@ export default function Navbar() {
                 Xemphim
               </span>
             </Link>
-            <div className="hidden md:flex gap-6">
-              <Link to="/cinemas" className="text-slate-300 hover:text-white transition-colors">Rạp</Link>
-            </div>
+            
           </div>
 
           {/* User actions */}

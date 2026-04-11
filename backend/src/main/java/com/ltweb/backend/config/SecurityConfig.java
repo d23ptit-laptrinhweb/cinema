@@ -33,7 +33,13 @@ public class SecurityConfig {
             "/v1/vnpay/return",
             "/v1/vnpay/ipn",
             "/auth/forgot-password",
-            "/auth/reset-password"
+            "/auth/reset-password",
+            "/film/**",
+            "/showtime/**",
+            "/room/**",
+            "/genre/**",
+            "/seat/**",
+            "/seat-type-price/**"
     };
 
     private final CustomUserDetailService userDetailsService;

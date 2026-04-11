@@ -38,11 +38,10 @@ public class RoomController {
 
     @GetMapping
     public ApiResponse<List<RoomResponse>> getAllRooms(
-        @RequestParam(value = "branchId", required = false) String branchId,
         @RequestParam(value = "status", required = false) RoomStatus status
     ) {
         ApiResponse<List<RoomResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(roomService.getAllRooms(branchId, status));
+        apiResponse.setResult(roomService.getAllRooms(status));
         return apiResponse;
     }
 

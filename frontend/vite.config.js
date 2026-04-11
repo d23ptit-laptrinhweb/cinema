@@ -9,10 +9,12 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    allowedHosts: ['elida-undepreciative-thomasena.ngrok-free.dev'],
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        ws: true,
       }
     }
   }

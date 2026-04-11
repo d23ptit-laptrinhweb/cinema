@@ -74,7 +74,7 @@ public class VnpayService {
                 : req.getOrderInfo());
         params.put("vnp_OrderType", orderType);
         params.put("vnp_Locale", (req.getLanguage() == null || req.getLanguage().isBlank()) ? "vn" : req.getLanguage());
-        params.put("vnp_ReturnUrl", props.getReturnUrl());
+        params.put("vnp_ReturnUrl", resolveFrontendReturnUrl(request));
         params.put("vnp_IpAddr", ipAddr);
 
         ZonedDateTime now = ZonedDateTime.now(VN_ZONE);
@@ -108,6 +108,15 @@ public class VnpayService {
         result.put("paymentUrl", paymentUrl);
         result.put("txnRef", txnRef);
         return result;
+    }
+
+    private String resolveFrontendReturnUrl(HttpServletRequest request) {
+        String origin = request.getHeader("Origin");
+        if (origin != null && !origin.isBlank()) {
+            String normalized = origin.endsWith("/") ? origin.substring(0, origin.length() - 1) : origin;
+            return normalized + "/v1/vnpay/return";
+        }
+        return props.getReturnUrl();
     }
 
     public String queryDr(QueryRequest req, HttpServletRequest servletRequest) {

@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { format, parseISO } from 'date-fns';
-import { InformationCircleIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client/dist/sockjs';
 
 export default function BookingSeat() {
   const { showtimeId } = useParams();
@@ -12,13 +14,18 @@ export default function BookingSeat() {
   const [film, setFilm] = useState(null);
   const [room, setRoom] = useState(null);
   const [seats, setSeats] = useState([]);
-  const [bookedSeatIds, setBookedSeatIds] = useState([]);
+  const [seatStatusById, setSeatStatusById] = useState({});
   const [prices, setPrices] = useState({});
   const [selectedSeats, setSelectedSeats] = useState([]);
   
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const normalizeStatus = (status) => {
+      if (status === 'PAID') return 'BOOKED';
+      return status || 'AVAILABLE';
+    };
+
     const fetchData = async () => {
       try {
         // 1. Fetch showtime details
@@ -38,9 +45,16 @@ export default function BookingSeat() {
           setFilm(filmRes);
           setRoom(roomRes);
           setSeats(seatRes || []);
-          
-          const bookedIds = (ticketRes || []).filter(t => t.ticketStatus === 'BOOKED' || t.ticketStatus === 'PAID').map(t => t.seatId);
-          setBookedSeatIds(bookedIds);
+
+          const statusMap = {};
+          (ticketRes || []).forEach((ticket) => {
+            statusMap[ticket.seatId] = normalizeStatus(ticket.displayStatus || ticket.ticketStatus);
+          });
+          setSeatStatusById(statusMap);
+
+          setSelectedSeats((prev) =>
+            prev.filter((seat) => statusMap[seat.seatId] === 'AVAILABLE')
+          );
 
           const priceMap = {};
           (priceRes || []).forEach(p => {
@@ -57,8 +71,48 @@ export default function BookingSeat() {
     fetchData();
   }, [showtimeId]);
 
+  useEffect(() => {
+    if (!showtimeId) return undefined;
+
+    const stompClient = new Client({
+      reconnectDelay: 3000,
+      webSocketFactory: () => new SockJS('/api/ws')
+    });
+
+    stompClient.onConnect = () => {
+      stompClient.subscribe(`/topic/showtime/${showtimeId}/seats`, (message) => {
+        try {
+          const payload = JSON.parse(message.body);
+          if (!payload?.seatId || !payload?.status) return;
+
+          const nextStatus = payload.status === 'PAID' ? 'BOOKED' : payload.status;
+
+          setSeatStatusById((prev) => ({
+            ...prev,
+            [payload.seatId]: nextStatus
+          }));
+
+          if (nextStatus !== 'AVAILABLE') {
+            setSelectedSeats((prev) => prev.filter((seat) => seat.seatId !== payload.seatId));
+          }
+        } catch (error) {
+          console.error('Invalid seat websocket payload', error);
+        }
+      });
+    };
+
+    stompClient.activate();
+
+    return () => {
+      stompClient.deactivate();
+    };
+  }, [showtimeId]);
+
+  const getSeatStatus = (seatId) => seatStatusById[seatId] || 'AVAILABLE';
+
   const toggleSeat = (seat) => {
-    if (bookedSeatIds.includes(seat.seatId) || !seat.isActive) return;
+    const status = getSeatStatus(seat.seatId);
+    if (status !== 'AVAILABLE' || !seat.isActive) return;
 
     setSelectedSeats(prev => {
       const isSelected = prev.some(s => s.seatId === seat.seatId);
@@ -139,7 +193,9 @@ export default function BookingSeat() {
               <div className="w-6 text-center text-slate-500 font-bold">{row}</div>
               <div className="flex gap-2">
                 {rows[row].map(seat => {
-                  const isBooked = bookedSeatIds.includes(seat.seatId) || !seat.isActive;
+                  const currentStatus = getSeatStatus(seat.seatId);
+                  const isBooked = currentStatus === 'BOOKED' || !seat.isActive;
+                  const isHolding = currentStatus === 'HOLDING';
                   const isSelected = selectedSeats.some(s => s.seatId === seat.seatId);
                   const isVip = seat.seatType === 'VIP';
                   const isCouple = seat.seatType === 'COUPLE';
@@ -148,6 +204,8 @@ export default function BookingSeat() {
                   
                   if (isBooked) {
                     seatClass += " bg-slate-700 text-slate-500 opacity-50 cursor-not-allowed";
+                  } else if (isHolding) {
+                    seatClass += " bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 cursor-not-allowed";
                   } else if (isSelected) {
                     seatClass += " bg-rose-500 text-white shadow-lg shadow-rose-500/40 ring-2 ring-rose-300";
                   } else {
@@ -164,7 +222,7 @@ export default function BookingSeat() {
                     <button
                       key={seat.seatId}
                       onClick={() => toggleSeat(seat)}
-                      disabled={isBooked}
+                      disabled={isBooked || isHolding}
                       className={seatClass}
                     >
                       {seat.seatNumber}
@@ -178,7 +236,7 @@ export default function BookingSeat() {
         </div>
 
         {/* Legend */}
-        <div className="mt-8 pt-8 border-t border-slate-700 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-slate-400">
+        <div className="mt-8 pt-8 border-t border-slate-700 grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm text-slate-400">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-slate-800 border border-slate-600"></div>
             <span>Ghế Thường</span>
@@ -190,6 +248,10 @@ export default function BookingSeat() {
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-rose-500"></div>
             <span className="text-white">Đang Chọn</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-cyan-500/20 border border-cyan-500/40"></div>
+            <span>Đang Giữ</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-slate-700 opacity-50"></div>
@@ -257,7 +319,6 @@ export default function BookingSeat() {
             disabled={selectedSeats.length === 0}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 text-white py-4 rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
-            <ShoppingCartIcon className="w-5 h-5" />
             Tiếp tục thanh toán
           </button>
         </div>
