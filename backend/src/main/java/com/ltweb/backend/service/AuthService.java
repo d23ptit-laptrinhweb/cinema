@@ -125,11 +125,10 @@ public class AuthService {
     }
 
     public void forgotPassword(String email) {
-        if(userRepository.existsByEmail(email)) throw new AppException(ErrorCode.USER_NOT_FOUND);
+        if(!userRepository.existsByEmail(email)) throw new AppException(ErrorCode.USER_NOT_FOUND);
 
         String otp = otpService.generateOTP(email);
 
-        otpService.saveOTP(email, otp);
         emailService.sendOtp(email, otp);
     }
 
