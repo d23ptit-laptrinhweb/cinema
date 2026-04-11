@@ -27,7 +27,7 @@ public class OTPService {
 
         // sinh OTP và lưu vào Redis
         String generateOtp = String.valueOf(Math.random() * 900000 + 100000);
-        stringRedisTemplate.opsForValue().setIfAbsent(codeKey, generateOtp, Duration.ofMinutes(5));
+        stringRedisTemplate.opsForValue().set(codeKey, generateOtp, Duration.ofMinutes(5));
         return generateOtp;
     }
 
@@ -38,6 +38,7 @@ public class OTPService {
     }
 
     public void deleteOTP(String email, String otp) {
-        stringRedisTemplate.delete(email);
+        String codeKey = "otp:code:" + email;
+        stringRedisTemplate.delete(codeKey);
     }
 }
