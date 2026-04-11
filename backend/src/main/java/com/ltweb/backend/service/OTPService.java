@@ -12,8 +12,8 @@ public class OTPService {
     private final StringRedisTemplate stringRedisTemplate;
 
     public String generateOTP(String email) {
-        String limitKey = "otp:limit" + email;
-        String codeKey = "otp:code" + email; // lưu lại cái mã đó để đối chiếu với người dùng khi nhập vào
+        String limitKey = "otp:limit:" + email;
+        String codeKey = "otp:code:" + email; // lưu lại cái mã đó để đối chiếu với người dùng khi nhập vào
 
         Long count = stringRedisTemplate.opsForValue().increment(limitKey);
         if (count == 1) {
@@ -25,17 +25,16 @@ public class OTPService {
             throw new RuntimeException("Bạn thao tác quá nhanh. Vui lòng thử lại");
         }
 
+        // sinh OTP và lưu vào Redis
         String generateOtp = String.valueOf(Math.random() * 900000 + 100000);
         stringRedisTemplate.opsForValue().setIfAbsent(codeKey, generateOtp, Duration.ofMinutes(5));
         return generateOtp;
     }
 
-    public void saveOTP(String email, String otp) {
-        stringRedisTemplate.opsForValue().set(email, otp);
-    }
-
     public boolean checkOTP(String email, String otp) {
-        return stringRedisTemplate.opsForValue().get(email).equals(otp);
+        String codeKey = "otp:code:" + email;
+        String storedKey = stringRedisTemplate.opsForValue().get(codeKey);
+        return storedKey != null && storedKey.equals(otp);
     }
 
     public void deleteOTP(String email, String otp) {
