@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 220 13% 18%; /* Dark Gray/Blue for cinema feel by default */
+    --foreground: 0 0% 100%;
+    
+    --primary: 346 87% 53%; /* Red/Pink accent */
+    --primary-foreground: 0 0% 100%;
+  }
+
+  * {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply bg-[#0f172a] text-slate-200 overflow-x-hidden;
+  }
+}
+
+/* Custom Scrollbar for sleek cinema feel */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
