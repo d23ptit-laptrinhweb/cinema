@@ -158,7 +158,6 @@ public class BookingService {
         return toBookingResponse(booking);
     }
 
-    @PostAuthorize("returnObject.username == authentication.name")
     public List<BookingResponse> getMyBookingsList() {
         var context = SecurityContextHolder.getContext();
         String username = Objects.requireNonNull(context.getAuthentication()).getName();
