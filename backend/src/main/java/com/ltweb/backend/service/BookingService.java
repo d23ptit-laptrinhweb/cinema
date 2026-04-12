@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import com.ltweb.backend.dto.response.SeatStatusEvent;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import com.ltweb.backend.entity.Showtime;
 import com.ltweb.backend.entity.Ticket;
 import com.ltweb.backend.entity.User;
 import com.ltweb.backend.enums.BookingStatus;
+import com.ltweb.backend.enums.PaymentMethod;
 import com.ltweb.backend.enums.PaymentStatus;
 import com.ltweb.backend.enums.TicketStatus;
 import com.ltweb.backend.exception.AppException;
@@ -129,12 +131,14 @@ public class BookingService {
         return toBookingResponse(booking);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<BookingResponse> getAllBookings() {
         return bookingRepository.findAll().stream()
                 .map(this::toBookingResponse)
                 .toList();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public BookingResponse getBookingById(String bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
@@ -170,12 +174,37 @@ public class BookingService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public BookingResponse updateBooking(String bookingId, UpdateBookingRequest request) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
         if (request.getStatus() != null) {
             booking.setStatus(request.getStatus());
+        }
+
+        if (request.getPaymentStatus() != null) {
+            booking.setPaymentStatus(request.getPaymentStatus());
+
+            if (request.getPaymentStatus() == PaymentStatus.PAID) {
+                booking.setPaidAt(LocalDateTime.now());
+                if (booking.getStatus() == BookingStatus.PENDING) {
+                    booking.setStatus(BookingStatus.COMPLETED);
+                }
+            } else if (request.getPaymentStatus() == PaymentStatus.CANCELLED) {
+                booking.setPaidAt(null);
+                if (booking.getStatus() == BookingStatus.PENDING || booking.getStatus() == BookingStatus.COMPLETED) {
+                    booking.setStatus(BookingStatus.CANCELLED);
+                }
+            }
+        }
+
+        if (request.getPaymentMethod() != null) {
+            booking.setPaymentMethod(request.getPaymentMethod());
+        }
+
+        if (request.getProviderTxnId() != null) {
+            booking.setProviderTxnId(request.getProviderTxnId().trim().isEmpty() ? null : request.getProviderTxnId().trim());
         }
 
         booking = bookingRepository.save(booking);

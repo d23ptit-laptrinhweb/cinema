@@ -8,8 +8,50 @@ export default function Profile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [bookingDetail, setBookingDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
+
+  const getBookingStatusMeta = (booking) => {
+    if (booking?.paymentStatus === 'PAID' || booking?.status === 'COMPLETED') {
+      return {
+        label: 'Đã thanh toán',
+        className: 'bg-green-500/20 text-green-500 border border-green-500/30'
+      };
+    }
+
+    if (booking?.status === 'CANCELLED' || booking?.paymentStatus === 'CANCELLED') {
+      return {
+        label: 'Đã huỷ',
+        className: 'bg-red-500/20 text-red-500 border border-red-500/30'
+      };
+    }
+
+    if (booking?.status === 'EXPIRED') {
+      return {
+        label: 'Hết hạn',
+        className: 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+      };
+    }
+
+    return {
+      label: 'Chờ thanh toán',
+      className: 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+    };
+  };
+
+  const getPaymentMethodLabel = (method) => {
+    const labels = {
+      VNPAY: 'VNPay',
+      CASH: 'Tien mat',
+      CARD: 'The'
+    };
+    return labels[method] || method || 'N/A';
+  };
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -42,6 +84,48 @@ export default function Profile() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/');
+  };
+
+  const openBookingDetail = async (booking) => {
+    setSelectedBooking(booking);
+    setDetailLoading(true);
+
+    try {
+      const showtime = booking.showtimeId
+        ? await axiosClient.get(`/showtime/${booking.showtimeId}`).catch(() => null)
+        : null;
+
+      const [room, film, seatResults] = await Promise.all([
+        showtime?.roomId ? axiosClient.get(`/room/${showtime.roomId}`).catch(() => null) : Promise.resolve(null),
+        showtime?.filmId ? axiosClient.get(`/film/${showtime.filmId}`).catch(() => null) : Promise.resolve(null),
+        Promise.all((booking.tickets || []).map((ticket) =>
+          axiosClient.get(`/seat/${ticket.seatId}`).catch(() => null)
+        ))
+      ]);
+
+      const seatLabels = seatResults
+        .filter(Boolean)
+        .map((seat) => seat.seatCode || `${seat.rowLabel}${seat.seatNumber}`)
+        .sort();
+
+      setBookingDetail({
+        showtime,
+        room,
+        film,
+        seatLabels
+      });
+    } catch (error) {
+      console.error('Loi khi tai chi tiet giao dich', error);
+      setBookingDetail({ showtime: null, room: null, film: null, seatLabels: [] });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeBookingDetail = () => {
+    setSelectedBooking(null);
+    setBookingDetail(null);
+    setDetailLoading(false);
   };
 
   if (loading) {
@@ -114,38 +198,114 @@ export default function Profile() {
         ) : (
           <div className="space-y-6">
             {bookings.map(booking => (
-              <div key={booking.bookingId} className="bg-slate-800 rounded-2xl border border-slate-600 p-6 flex flex-col md:flex-row gap-6 hover:border-rose-500/50 transition-colors">
+              <button
+                key={booking.bookingId}
+                type="button"
+                onClick={() => openBookingDetail(booking)}
+                className="w-full text-left bg-slate-800 rounded-2xl border border-slate-600 p-6 flex flex-col md:flex-row gap-6 hover:border-rose-500/50 transition-colors"
+              >
                 <div className="flex-1 space-y-2">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                     <span className="text-xs text-slate-400 font-mono">Mã Đặt Vé: {booking.bookingId}</span>
                     <h4 className="text-xl font-bold text-rose-400 mt-1">Giao dịch vé phim</h4>
                     </div>
-                    {booking.status === 'PAID' ? (
-                       <span className="bg-green-500/20 text-green-500 border border-green-500/30 px-3 py-1 rounded font-bold text-sm">Đã Thanh Toán</span>
-                    ) : booking.status === 'CANCELLED' ? (
-                       <span className="bg-red-500/20 text-red-500 border border-red-500/30 px-3 py-1 rounded font-bold text-sm">Đã Hủy</span>
-                    ) : (
-                       <span className="bg-amber-500/20 text-amber-500 border border-amber-500/30 px-3 py-1 rounded font-bold text-sm">{booking.status}</span>
-                    )}
+                    <span className={`${getBookingStatusMeta(booking).className} px-3 py-1 rounded font-bold text-sm`}>
+                      {getBookingStatusMeta(booking).label}
+                    </span>
                   </div>
                   
                   <div className="grid grid-cols-2 text-sm gap-y-2">
                      <div>
                        <span className="text-slate-500 block">Ngày đặt</span>
-                       <span className="text-slate-200">{booking.bookingTime ? format(parseISO(booking.bookingTime), 'HH:mm dd/MM/yyyy') : 'N/A'}</span>
+                       <span className="text-slate-200">{booking.createdAt ? format(parseISO(booking.createdAt), 'HH:mm dd/MM/yyyy') : 'N/A'}</span>
                      </div>
                      <div>
                        <span className="text-slate-500 block">Tổng tiền</span>
-                       <span className="text-rose-400 font-bold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(booking.totalAmount || 0)}</span>
+                       <span className="text-rose-400 font-bold">{formatCurrency(booking.totalAmount)}</span>
                      </div>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
       </div>
+
+      {selectedBooking && (
+        <div className="fixed inset-0 z-50 bg-black/70 p-4 flex items-center justify-center" onClick={closeBookingDetail}>
+          <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-700">
+              <h4 className="text-xl font-bold text-white">Chi tiết giao dịch</h4>
+              <button type="button" className="text-slate-400 hover:text-white" onClick={closeBookingDetail}>Dong</button>
+            </div>
+
+            {detailLoading ? (
+              <div className="py-10 flex justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-rose-500"></div>
+              </div>
+            ) : (
+              <div className="space-y-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-slate-500 block">Mã đơn</span>
+                    <span className="text-slate-200 font-mono">{selectedBooking.bookingCode || selectedBooking.bookingId}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Trạng thái</span>
+                    <span className={`${getBookingStatusMeta(selectedBooking).className} inline-block px-2 py-1 rounded font-semibold`}>
+                      {getBookingStatusMeta(selectedBooking).label}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Thời gian đặt</span>
+                    <span className="text-slate-200">{selectedBooking.createdAt ? format(parseISO(selectedBooking.createdAt), 'HH:mm dd/MM/yyyy') : 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Thanh toán</span>
+                    <span className="text-slate-200">{getPaymentMethodLabel(selectedBooking.paymentMethod)} - {selectedBooking.paymentStatus || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Phim</span>
+                    <span className="text-slate-200">{bookingDetail?.film?.filmName || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Phòng</span>
+                    <span className="text-slate-200">{bookingDetail?.room?.name || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Suất chiếu</span>
+                    <span className="text-slate-200">
+                      {bookingDetail?.showtime?.startTime
+                        ? format(parseISO(bookingDetail.showtime.startTime), 'HH:mm dd/MM/yyyy')
+                        : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Tổng tiền</span>
+                    <span className="text-rose-400 font-bold">{formatCurrency(selectedBooking.totalAmount)}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-slate-500 block mb-2">Ghế đã đặt</span>
+                  {bookingDetail?.seatLabels?.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {bookingDetail.seatLabels.map((seatLabel) => (
+                        <span key={seatLabel} className="px-2 py-1 rounded bg-slate-800 border border-slate-600 text-slate-200">
+                          {seatLabel}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-slate-300">N/A</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

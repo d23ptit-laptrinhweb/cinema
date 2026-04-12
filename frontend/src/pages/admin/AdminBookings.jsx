@@ -5,6 +5,23 @@ import { format, parseISO } from 'date-fns';
 export default function AdminBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingBooking, setEditingBooking] = useState(null);
+  const [statusValue, setStatusValue] = useState('PENDING');
+  const [paymentStatusValue, setPaymentStatusValue] = useState('PENDING');
+  const [paymentMethodValue, setPaymentMethodValue] = useState('VNPAY');
+  const [providerTxnIdValue, setProviderTxnIdValue] = useState('');
+  const [updating, setUpdating] = useState(false);
+
+  const bookingStatuses = ['PENDING', 'COMPLETED', 'CANCELLED', 'EXPIRED'];
+  const paymentStatuses = ['PENDING', 'PAID', 'CANCELLED'];
+  const paymentMethods = ['VNPAY', 'CARD', 'CASH'];
+
+  const getStatusBadgeClass = (status) => {
+    if (status === 'COMPLETED') return 'bg-green-500/10 text-green-500';
+    if (status === 'CANCELLED') return 'bg-red-500/10 text-red-500';
+    if (status === 'EXPIRED') return 'bg-slate-500/20 text-slate-300';
+    return 'bg-amber-500/10 text-amber-500';
+  };
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -23,6 +40,43 @@ export default function AdminBookings() {
       await axiosClient.delete(`/booking/${id}`);
       setBookings(prev => prev.map(b => b.bookingId === id ? { ...b, status: 'CANCELLED' } : b));
     } catch (err) { alert('Lỗi: ' + (err?.message || JSON.stringify(err))); }
+  };
+
+  const openEdit = (booking) => {
+    setEditingBooking(booking);
+    setStatusValue(booking.status || 'PENDING');
+    setPaymentStatusValue(booking.paymentStatus || 'PENDING');
+    setPaymentMethodValue(booking.paymentMethod || 'VNPAY');
+    setProviderTxnIdValue(booking.providerTxnId || '');
+  };
+
+  const closeEdit = () => {
+    setEditingBooking(null);
+    setStatusValue('PENDING');
+    setPaymentStatusValue('PENDING');
+    setPaymentMethodValue('VNPAY');
+    setProviderTxnIdValue('');
+    setUpdating(false);
+  };
+
+  const handleUpdateBooking = async (e) => {
+    e.preventDefault();
+    if (!editingBooking) return;
+
+    setUpdating(true);
+    try {
+      const updated = await axiosClient.put(`/booking/${editingBooking.bookingId}`, {
+        status: statusValue,
+        paymentStatus: paymentStatusValue,
+        paymentMethod: paymentMethodValue,
+        providerTxnId: providerTxnIdValue
+      });
+      setBookings(prev => prev.map(b => b.bookingId === editingBooking.bookingId ? updated : b));
+      closeEdit();
+    } catch (err) {
+      alert('Lỗi: ' + (err?.message || JSON.stringify(err)));
+      setUpdating(false);
+    }
   };
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div></div>;
@@ -57,9 +111,7 @@ export default function AdminBookings() {
                     <td className="px-4 py-3 text-slate-300">{b.userId?.slice(0, 8)}...</td>
                     <td className="px-4 py-3">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        b.status === 'CONFIRMED' ? 'bg-green-500/10 text-green-500' :
-                        b.status === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
-                        'bg-amber-500/10 text-amber-500'
+                        getStatusBadgeClass(b.status)
                       }`}>{b.status}</span>
                     </td>
                     <td className="px-4 py-3">
@@ -76,9 +128,17 @@ export default function AdminBookings() {
                       {b.createdAt ? format(parseISO(b.createdAt), 'HH:mm dd/MM/yyyy') : 'N/A'}
                     </td>
                     <td className="px-4 py-3">
-                      {b.status === 'PENDING' && (
-                        <button onClick={() => handleCancel(b.bookingId)} className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-bold hover:bg-red-500/20 transition-colors">Huỷ</button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openEdit(b)}
+                          className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-500/20 transition-colors"
+                        >
+                          Sửa
+                        </button>
+                        {b.status === 'PENDING' && (
+                          <button onClick={() => handleCancel(b.bookingId)} className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-bold hover:bg-red-500/20 transition-colors">Huỷ</button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -87,6 +147,83 @@ export default function AdminBookings() {
           </table>
         </div>
       </div>
+
+      {editingBooking && (
+        <div className="fixed inset-0 z-50 bg-black/70 p-4 flex items-center justify-center" onClick={closeEdit}>
+          <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-4">Chỉnh sửa đơn đặt vé</h3>
+            <p className="text-sm text-slate-400 mb-4 font-mono">{editingBooking.bookingCode || editingBooking.bookingId}</p>
+
+            <form onSubmit={handleUpdateBooking} className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Trạng thái booking</label>
+                <select
+                  value={statusValue}
+                  onChange={(e) => setStatusValue(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
+                >
+                  {bookingStatuses.map((status) => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Trạng thái thanh toán</label>
+                <select
+                  value={paymentStatusValue}
+                  onChange={(e) => setPaymentStatusValue(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
+                >
+                  {paymentStatuses.map((status) => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Phương thức thanh toán</label>
+                <select
+                  value={paymentMethodValue}
+                  onChange={(e) => setPaymentMethodValue(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
+                >
+                  {paymentMethods.map((method) => (
+                    <option key={method} value={method}>{method}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Mã giao dịch cổng thanh toán</label>
+                <input
+                  value={providerTxnIdValue}
+                  onChange={(e) => setProviderTxnIdValue(e.target.value)}
+                  placeholder="VD: VNP123456"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeEdit}
+                  className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating}
+                  className="px-4 py-2 rounded-lg bg-rose-500 text-white font-semibold hover:bg-rose-600 disabled:opacity-60"
+                >
+                  {updating ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
