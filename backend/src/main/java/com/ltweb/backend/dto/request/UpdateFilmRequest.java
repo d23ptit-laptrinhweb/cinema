@@ -35,7 +35,10 @@ public class UpdateFilmRequest {
     private String subtitle;
 
     @Size(max = 500, message = "Thumbnail URL must be at most 500 characters")
-    private String thumnbnail_url;
+    private String thumbnailUrl;
+
+    @Size(max = 500, message = "Trailer URL must be at most 500 characters")
+    private String trailerUrl;
 
     private LocalDate releaseDate;
 

@@ -125,7 +125,13 @@ public class GlobalExceptionHandler {
             Exception ex, WebRequest request) {
 
         log.error("Unexpected exception occurred: ", ex);
-        ErrorResponse response = buildErrorCodeResponse(ErrorCode.INTERNAL_ERROR, request);
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(new Date())
+                .code(ErrorCode.INTERNAL_ERROR.getCode())
+                .message("Unexpected error occurred: " + ex.toString() + " - " + ex.getMessage())
+                .error(ErrorCode.INTERNAL_ERROR.getStatus().getReasonPhrase())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 

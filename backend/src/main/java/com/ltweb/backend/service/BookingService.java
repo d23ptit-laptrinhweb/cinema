@@ -141,7 +141,6 @@ public class BookingService {
         return toBookingResponse(booking);
     }
 
-    @PostAuthorize("returnObject.username == authentication.name")
     public BookingResponse getMyBookings(String bookingId) {
         var context = SecurityContextHolder.getContext();
         String username = Objects.requireNonNull(context.getAuthentication()).getName();
@@ -158,7 +157,6 @@ public class BookingService {
         return toBookingResponse(booking);
     }
 
-    @PostAuthorize("returnObject.username == authentication.name")
     public List<BookingResponse> getMyBookingsList() {
         var context = SecurityContextHolder.getContext();
         String username = Objects.requireNonNull(context.getAuthentication()).getName();
@@ -228,11 +226,24 @@ public class BookingService {
     }
 
     private BookingResponse toBookingResponse(Booking booking) {
+        Showtime showtime = booking.getShowtime();
         return BookingResponse.builder()
                 .bookingId(booking.getId())
                 .bookingCode(booking.getBookingCode())
                 .userId(booking.getUser().getId())
-                .showtimeId(booking.getShowtime().getId())
+                .showtimeId(showtime.getId())
+                .filmName(showtime.getFilm() != null ? showtime.getFilm().getFilmName() : null)
+                .filmThumbnailUrl(showtime.getFilm() != null ? showtime.getFilm().getThumbnailUrl() : null)
+                .roomName(showtime.getRoom() != null ? showtime.getRoom().getName() : null)
+                .branchName(showtime.getRoom() != null && showtime.getRoom().getBranch() != null
+                        ? showtime.getRoom().getBranch().getName()
+                        : null)
+                .showtimeStart(showtime.getStartTime())
+                .showtimeEnd(showtime.getEndTime())
+                .seatCodes(booking.getTickets().stream()
+                        .map(ticket -> ticket.getSeat() != null ? ticket.getSeat().getSeatCode() : null)
+                        .filter(Objects::nonNull)
+                        .toList())
                 .totalAmount(booking.getTotalAmount())
                 .status(booking.getStatus())
                 .expiresAt(booking.getExpiresAt())

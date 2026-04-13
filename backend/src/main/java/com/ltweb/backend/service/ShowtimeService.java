@@ -1,6 +1,10 @@
 package com.ltweb.backend.service;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -41,7 +45,8 @@ public class ShowtimeService {
         Film film = filmRepository.findById(request.getFilmId())
                 .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));
 
-        if (showtimeRepository.existsOverlappingShowtime(request.getRoomId(), request.getStartTime(), request.getEndTime())) {
+        if (showtimeRepository.existsOverlappingShowtime(request.getRoomId(), request.getStartTime(),
+                request.getEndTime())) {
             throw new AppException(ErrorCode.SHOWTIME_TIME_OVERLAP);
         }
 
@@ -81,6 +86,14 @@ public class ShowtimeService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    public List<ShowtimeResponse> getAll() {
+        return showtimeRepository.findAll().stream()
+                .sorted(Comparator.comparing(Showtime::getStartTime).reversed())
+                .map(showtimeMapper::toResponse)
+                .toList();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     public List<ShowtimeResponse> getByRoom(Long roomId) {
         return showtimeRepository.findByRoomId(roomId)
                 .stream()
@@ -93,5 +106,54 @@ public class ShowtimeService {
                 .stream()
                 .map(showtimeMapper::toResponse)
                 .toList();
+    }
+
+    /**
+     * Lấy suất chiếu theo chi nhánh + ngày, nhóm theo phim.
+     * Trả về danh sách Map, mỗi entry chứa thông tin phim + danh sách suất chiếu.
+     */
+    public List<Map<String, Object>> getByBranch(String branchId, LocalDate date) {
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+
+        List<Showtime> showtimes = showtimeRepository.findByBranchAndDate(branchId, startOfDay, endOfDay);
+
+        // Group by film
+        Map<String, List<Showtime>> grouped = showtimes.stream()
+                .collect(Collectors.groupingBy(
+                        s -> s.getFilm().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (var entry : grouped.entrySet()) {
+            Film film = entry.getValue().get(0).getFilm();
+            Map<String, Object> filmGroup = new LinkedHashMap<>();
+            filmGroup.put("filmId", film.getId());
+            filmGroup.put("filmName", film.getFilmName());
+            filmGroup.put("thumbnailUrl", film.getThumbnailUrl());
+            filmGroup.put("durationMinutes", film.getDurationMinutes());
+            filmGroup.put("ageRating", film.getAgeRating());
+            filmGroup.put("language", film.getLanguage());
+
+            List<Map<String, Object>> showtimeList = entry.getValue().stream()
+                    .map(s -> {
+                        Map<String, Object> st = new LinkedHashMap<>();
+                        st.put("showtimeId", s.getId());
+                        st.put("roomId", s.getRoom().getId());
+                        st.put("roomName", s.getRoom().getName());
+                        st.put("roomType", s.getRoom().getRoomType());
+                        st.put("startTime", s.getStartTime());
+                        st.put("endTime", s.getEndTime());
+                        st.put("status", s.getStatus());
+                        return st;
+                    })
+                    .toList();
+
+            filmGroup.put("showtimes", showtimeList);
+            result.add(filmGroup);
+        }
+
+        return result;
     }
 }

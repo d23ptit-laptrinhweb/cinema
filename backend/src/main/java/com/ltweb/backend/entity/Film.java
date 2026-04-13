@@ -45,7 +45,11 @@ public class Film {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "thumbnail_url")
     private String thumbnailUrl;
+
+    @Column(name = "trailer_url")
+    private String trailerUrl;
 
     private Integer durationMinutes;
 
@@ -55,8 +59,6 @@ public class Film {
     private String language;
 
     private String subtitle;
-
-    private String thumnbnail_url;
 
     private LocalDate releaseDate;
 

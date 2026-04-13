@@ -23,6 +23,17 @@ public class BookingResponse {
 
     private String showtimeId;
 
+    // chi tiết xuất chiếu để hiển thị
+    private String filmName;
+    private String filmThumbnailUrl;
+    private String roomName;
+    private String branchName;
+    private LocalDateTime showtimeStart;
+    private LocalDateTime showtimeEnd;
+
+    // Seat codes
+    private List<String> seatCodes;
+
     private BigDecimal totalAmount;
 
     private BookingStatus status;

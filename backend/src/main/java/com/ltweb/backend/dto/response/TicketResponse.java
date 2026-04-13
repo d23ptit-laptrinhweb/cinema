@@ -19,6 +19,12 @@ public class TicketResponse {
 
     private String seatId;
 
+    private String seatCode;
+
+    private String rowLabel;
+
+    private Integer seatNumber;
+
     private BigDecimal price;
 
     /** Trạng thái raw trong DB */

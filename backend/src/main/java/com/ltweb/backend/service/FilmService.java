@@ -36,7 +36,8 @@ public class FilmService {
             .ageRating(createFilmRequest.getAgeRating())
             .language(createFilmRequest.getLanguage())
             .subtitle(createFilmRequest.getSubtitle())
-            .thumnbnail_url(createFilmRequest.getThumnbnail_url())
+            .thumbnailUrl(createFilmRequest.getThumbnailUrl())
+            .trailerUrl(createFilmRequest.getTrailerUrl())
             .releaseDate(createFilmRequest.getReleaseDate())
             .endDate(createFilmRequest.getEndDate())
             .status(createFilmRequest.getStatus())
@@ -99,8 +100,11 @@ public class FilmService {
         if (request.getSubtitle() != null) {
             film.setSubtitle(request.getSubtitle());
         }
-        if (request.getThumnbnail_url() != null) {
-            film.setThumnbnail_url(request.getThumnbnail_url());
+        if (request.getThumbnailUrl() != null) {
+            film.setThumbnailUrl(request.getThumbnailUrl());
+        }
+        if (request.getTrailerUrl() != null) {
+            film.setTrailerUrl(request.getTrailerUrl());
         }
         if (request.getReleaseDate() != null) {
             film.setReleaseDate(request.getReleaseDate());
@@ -144,7 +148,8 @@ public class FilmService {
             .ageRating(film.getAgeRating())
             .language(film.getLanguage())
             .subtitle(film.getSubtitle())
-            .thumnbnail_url(film.getThumnbnail_url())
+            .thumbnailUrl(film.getThumbnailUrl())
+            .trailerUrl(film.getTrailerUrl())
             .releaseDate(film.getReleaseDate())
             .endDate(film.getEndDate())
             .status(film.getStatus())

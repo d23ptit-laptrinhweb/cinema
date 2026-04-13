@@ -12,12 +12,12 @@ import com.ltweb.backend.enums.RoomStatus;
 
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
-    @Query("select r from Room r where r.branch.branch_id = :branchId")
+    @Query("select r from Room r where r.branch.branchId = :branchId")
     List<Room> findByBranchId(@Param("branchId") String branchId);
 
     List<Room> findByStatus(RoomStatus status);
 
-    @Query("select r from Room r where r.branch.branch_id = :branchId and r.status = :status")
+    @Query("select r from Room r where r.branch.branchId = :branchId and r.status = :status")
     List<Room> findByBranchIdAndStatus(
         @Param("branchId") String branchId,
         @Param("status") RoomStatus status

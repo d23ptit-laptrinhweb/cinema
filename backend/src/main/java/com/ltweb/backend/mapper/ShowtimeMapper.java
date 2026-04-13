@@ -26,6 +26,10 @@ public interface ShowtimeMapper {
 
     @Mapping(source = "id", target = "showtimeId")
     @Mapping(source = "room.id", target = "roomId")
+    @Mapping(source = "room.name", target = "roomName")
+    @Mapping(expression = "java(showtime.getRoom() != null && showtime.getRoom().getRoomType() != null ? showtime.getRoom().getRoomType().name() : null)", target = "roomType")
+    @Mapping(source = "room.branch.name", target = "branchName")
     @Mapping(source = "film.id", target = "filmId")
+    @Mapping(source = "film.filmName", target = "filmName")
     ShowtimeResponse toResponse(Showtime showtime);
 }

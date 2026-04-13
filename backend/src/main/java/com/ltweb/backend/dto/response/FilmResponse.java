@@ -24,7 +24,8 @@ public class FilmResponse {
     private AgeRating ageRating;
     private String language;
     private String subtitle;
-    private String thumnbnail_url;
+    private String thumbnailUrl;
+    private String trailerUrl;
     private LocalDate releaseDate;
     private LocalDate endDate;
     private FilmStatus status;

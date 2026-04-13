@@ -2,7 +2,7 @@ package com.ltweb.backend.service;
 
 import java.util.List;
 
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.ltweb.backend.mapper.BranchMapper;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateBranchRequest;
@@ -19,76 +19,40 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BranchService {
     private final BranchRepository branchRepository;
+    private final BranchMapper branchMapper;
 
-    @PreAuthorize("hasRole('ADMIN')")
     public BranchResponse createBranch(CreateBranchRequest createBranchRequest){
-        Branch branch = new Branch();
-        branch.setBranch_code(createBranchRequest.getBranchCode());
-        branch.setName(createBranchRequest.getName());
-        branch.setAddress(createBranchRequest.getAddress());
-        branch.setCity(createBranchRequest.getCity());
-        branch.setPhone(createBranchRequest.getPhone());
-        branch.setStatus(createBranchRequest.getStatus());
-        return toBranchResponse(branchRepository.save(branch));
+        Branch branch = branchMapper.toBranchEntity(createBranchRequest);
+        return branchMapper.toBranchResponse(branchRepository.save(branch));
     }
 
-    
     public List<BranchResponse> getAllBranches() {
         return branchRepository.findAll().stream()
-            .map(this::toBranchResponse)
+            .map(branchMapper::toBranchResponse)
             .toList();
     }
 
-
     public BranchResponse getBranchById(String branchId) {
-        Branch branch = branchRepository.findById(branchId)
-            .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));
-        return toBranchResponse(branch);
+        Branch branch = getBranchByBranchId(branchId);
+        return branchMapper.toBranchResponse(branch);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public BranchResponse updateBranch(String branchId, UpdateBranchRequest request) {
-        Branch branch = branchRepository.findById(branchId)
-            .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));
+        Branch branch = getBranchByBranchId(branchId);
 
-        if (request.getBranchCode() != null) {
-            branch.setBranch_code(request.getBranchCode());
-        }
-        if (request.getName() != null) {
-            branch.setName(request.getName());
-        }
-        if (request.getAddress() != null) {
-            branch.setAddress(request.getAddress());
-        }
-        if (request.getCity() != null) {
-            branch.setCity(request.getCity());
-        }
-        if (request.getPhone() != null) {
-            branch.setPhone(request.getPhone());
-        }
-        if (request.getStatus() != null) {
-            branch.setStatus(request.getStatus());
-        }
+        branchMapper.updateBranch(request, branch);
 
-        return toBranchResponse(branchRepository.save(branch));
+        return branchMapper.toBranchResponse(branchRepository.save(branch));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public void deleteBranch(String branchId){
-        Branch branch = branchRepository.findById(branchId)
-            .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));
+        Branch branch = getBranchByBranchId(branchId);
         branchRepository.delete(branch);
     }
 
-    private BranchResponse toBranchResponse(Branch branch) {
-        return BranchResponse.builder()
-            .branchId(branch.getBranch_id())
-            .branchCode(branch.getBranch_code())
-            .name(branch.getName())
-            .address(branch.getAddress())
-            .city(branch.getCity())
-            .phone(branch.getPhone())
-            .status(branch.getStatus())
-            .build();
+    // ===== PRIVATE HELPER =====
+    private Branch getBranchByBranchId(String branchId) {
+        return branchRepository.findById(branchId)
+                .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));
     }
 }

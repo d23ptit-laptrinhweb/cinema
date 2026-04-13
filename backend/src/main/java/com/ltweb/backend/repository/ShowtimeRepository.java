@@ -18,16 +18,27 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, String> {
     List<Showtime> findByStartTimeBetween(LocalDateTime start, LocalDateTime end);
 
     @Query("""
-        SELECT COUNT(s) > 0
-        FROM Showtime s
-        WHERE s.room.id = :roomId
-          AND s.startTime < :endTime
-          AND s.endTime > :startTime
-    """)
+                SELECT COUNT(s) > 0
+                FROM Showtime s
+                WHERE s.room.id = :roomId
+                  AND s.startTime < :endTime
+                  AND s.endTime > :startTime
+            """)
     boolean existsOverlappingShowtime(
             @Param("roomId") Long roomId,
             @Param("startTime") LocalDateTime startTime,
-            @Param("endTime") LocalDateTime endTime
-    );
-    
+            @Param("endTime") LocalDateTime endTime);
+
+    @Query("""
+                SELECT s FROM Showtime s
+                WHERE s.room.branch.branchId = :branchId
+                  AND s.startTime >= :startOfDay
+                  AND s.startTime < :endOfDay
+                ORDER BY s.film.filmName, s.startTime
+            """)
+    List<Showtime> findByBranchAndDate(
+            @Param("branchId") String branchId,
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay") LocalDateTime endOfDay);
+
 }

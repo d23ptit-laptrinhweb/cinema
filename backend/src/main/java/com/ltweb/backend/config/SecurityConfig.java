@@ -1,5 +1,7 @@
 package com.ltweb.backend.config;
 
+import java.util.List;
+
 import com.ltweb.backend.service.CustomUserDetailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +22,9 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -33,7 +38,8 @@ public class SecurityConfig {
             "/v1/vnpay/return",
             "/v1/vnpay/ipn",
             "/auth/forgot-password",
-            "/auth/reset-password"
+            "/auth/reset-password",
+            "/api/v1/cleanup/**"
     };
 
     private final CustomUserDetailService userDetailsService;
@@ -43,12 +49,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers(PUBLIC_ENDPOINT).permitAll()
+                        .requestMatchers("/v1/cleanup/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/film/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/showtime/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/ticket/showtime/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/genre/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/branch/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/room/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/user").permitAll()
+                        .anyRequest().authenticated())
                 .exceptionHandling((exception) -> exception
                         .authenticationEntryPoint(authenticationEntryPoint))
                 .oauth2ResourceServer((oauth2) -> oauth2
@@ -70,12 +84,24 @@ public class SecurityConfig {
         return jwtAuthenticationConverter;
     }
 
-
     @Bean
     public AuthenticationManager authenticationManager() {
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(authenticationProvider);
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174", "http://localhost:3000"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean

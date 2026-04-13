@@ -2,6 +2,7 @@ package com.ltweb.backend.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +30,7 @@ public class RoomController {
     private final RoomService roomService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<RoomResponse> createRoom(@RequestBody @Valid CreateRoomRequest request) {
         ApiResponse<RoomResponse> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Create room successfully!");

@@ -37,7 +37,7 @@ public class OTPService {
         return storedKey != null && storedKey.equals(otp);
     }
 
-    public void deleteOTP(String email, String otp) {
+    public void deleteOTP(String email) {
         String codeKey = "otp:code:" + email;
         stringRedisTemplate.delete(codeKey);
     }

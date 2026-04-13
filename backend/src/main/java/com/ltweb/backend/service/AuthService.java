@@ -143,6 +143,6 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        otpService.deleteOTP(email, otp);
+        otpService.deleteOTP(email);
     }
 }

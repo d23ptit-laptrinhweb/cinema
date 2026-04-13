@@ -12,7 +12,11 @@ import lombok.Data;
 public class ShowtimeResponse {
     private String showtimeId;
     private Long roomId;
+    private String roomName;
+    private String roomType;
+    private String branchName;
     private String filmId;
+    private String filmName;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private ShowtimeStatus status;

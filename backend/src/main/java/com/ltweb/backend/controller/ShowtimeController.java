@@ -1,8 +1,11 @@
 package com.ltweb.backend.controller;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import com.ltweb.backend.service.ShowtimeService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import com.ltweb.backend.dto.request.CreateShowtimeRequest;
@@ -19,6 +22,13 @@ public class ShowtimeController {
 
     private final ShowtimeService showtimeService;
 
+    @GetMapping
+    public ApiResponse<List<ShowtimeResponse>> getAll() {
+        ApiResponse<List<ShowtimeResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(showtimeService.getAll());
+        return apiResponse;
+    }
+
     @PostMapping
     public ApiResponse<ShowtimeResponse> create(@RequestBody CreateShowtimeRequest request) {
         ApiResponse<ShowtimeResponse> apiResponse = new ApiResponse<>();
@@ -29,9 +39,8 @@ public class ShowtimeController {
 
     @PutMapping("/{id}")
     public ApiResponse<ShowtimeResponse> update(
-        @PathVariable String id,
-        @RequestBody UpdateShowtimeRequest request
-    ) {
+            @PathVariable String id,
+            @RequestBody UpdateShowtimeRequest request) {
         ApiResponse<ShowtimeResponse> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Showtime has been updated successfully!");
         apiResponse.setResult(showtimeService.update(id, request));
@@ -64,6 +73,18 @@ public class ShowtimeController {
     public ApiResponse<List<ShowtimeResponse>> getByFilm(@PathVariable String filmId) {
         ApiResponse<List<ShowtimeResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setResult(showtimeService.getByFilm(filmId));
+        return apiResponse;
+    }
+
+    @GetMapping("/branch/{branchId}")
+    public ApiResponse<List<Map<String, Object>>> getByBranch(
+            @PathVariable String branchId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        ApiResponse<List<Map<String, Object>>> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(showtimeService.getByBranch(branchId, date));
         return apiResponse;
     }
 }

@@ -2,6 +2,7 @@ package com.ltweb.backend.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +28,7 @@ public class BranchController {
     private final BranchService branchService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<BranchResponse> createBranch(@RequestBody @Valid CreateBranchRequest createBranchRequest){
         ApiResponse<BranchResponse> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Create branch successfully!");
@@ -42,6 +44,7 @@ public class BranchController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<BranchResponse> getBranchById(@PathVariable("id") String id) {
         ApiResponse<BranchResponse> apiResponse = new ApiResponse<>();
         apiResponse.setResult(branchService.getBranchById(id));
@@ -49,6 +52,7 @@ public class BranchController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<BranchResponse> updateBranch(
         @PathVariable("id") String id,
         @RequestBody @Valid UpdateBranchRequest updateBranchRequest

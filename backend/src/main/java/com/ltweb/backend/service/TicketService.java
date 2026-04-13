@@ -155,6 +155,9 @@ public class TicketService {
                 .bookingId(ticket.getBooking() != null ? ticket.getBooking().getId() : null)
                 .showtimeId(ticket.getShowtime() != null ? ticket.getShowtime().getId() : null)
                 .seatId(ticket.getSeat() != null ? ticket.getSeat().getId() : null)
+                .seatCode(ticket.getSeat() != null ? ticket.getSeat().getSeatCode() : null)
+                .rowLabel(ticket.getSeat() != null ? ticket.getSeat().getRowLabel() : null)
+                .seatNumber(ticket.getSeat() != null ? ticket.getSeat().getSeatNumber() : null)
                 .price(ticket.getPrice())
                 .ticketStatus(ticket.getTicketStatus())
                 .displayStatus(ticket.getTicketStatus()) // mặc định bằng DB, sẽ được override sau
