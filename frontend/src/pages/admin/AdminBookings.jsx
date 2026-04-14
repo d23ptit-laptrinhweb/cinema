@@ -13,6 +13,10 @@ export default function AdminBookings() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ status: 'PENDING', paymentStatus: 'PENDING' });
   const [saving, setSaving] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -72,6 +76,22 @@ export default function AdminBookings() {
       await axiosClient.delete(`/booking/${id}`);
       setBookings(prev => prev.map(b => b.bookingId === id ? { ...b, status: 'CANCELLED' } : b));
     } catch (err) { alert('Lỗi: ' + (err?.message || JSON.stringify(err))); }
+  };
+
+  const handleViewDetail = async (id) => {
+    setShowDetailModal(true);
+    setDetailLoading(true);
+    setDetailError('');
+    setSelectedBooking(null);
+
+    try {
+      const detail = await axiosClient.get(`/booking/${id}`);
+      setSelectedBooking(detail);
+    } catch (err) {
+      setDetailError(err?.message || 'Không thể tải chi tiết booking.');
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   if (loading) return <div className="flex justify-center py-20"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div></div>;
@@ -203,6 +223,12 @@ export default function AdminBookings() {
                         ) : (
                           <>
                             <button
+                              onClick={() => handleViewDetail(b.bookingId)}
+                              className="px-3 py-1.5 bg-zinc-500/10 text-zinc-700 rounded-lg text-xs font-bold hover:bg-zinc-500/20 transition-colors"
+                            >
+                              Xem
+                            </button>
+                            <button
                               onClick={() => beginEdit(b)}
                               className="px-3 py-1.5 bg-blue-500/10 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-500/20 transition-colors"
                             >
@@ -244,6 +270,96 @@ export default function AdminBookings() {
           </button>
         </div>
       </div>
+
+      {showDetailModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowDetailModal(false)}>
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between border-b border-zinc-200 pb-3">
+              <h3 className="text-lg font-black text-zinc-900">Chi tiết booking</h3>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+              >
+                Đóng
+              </button>
+            </div>
+
+            {detailLoading ? (
+              <div className="flex min-h-[180px] items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div>
+              </div>
+            ) : detailError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+                {detailError}
+              </div>
+            ) : selectedBooking ? (
+              <div className="space-y-4 text-sm">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="text-zinc-500">Mã booking</p>
+                    <p className="font-semibold text-zinc-900">{selectedBooking.bookingCode || selectedBooking.bookingId}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="text-zinc-500">Người dùng</p>
+                    <p className="font-semibold text-zinc-900">{selectedBooking.userId || 'N/A'}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="text-zinc-500">Trạng thái đơn</p>
+                    <p className="font-semibold text-zinc-900">{selectedBooking.status || 'N/A'}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="text-zinc-500">Trạng thái thanh toán</p>
+                    <p className="font-semibold text-zinc-900">{selectedBooking.paymentStatus || 'N/A'}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="text-zinc-500">Suất chiếu</p>
+                    <p className="font-semibold text-zinc-900">{selectedBooking.showtimeId || 'N/A'}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="text-zinc-500">Tổng tiền</p>
+                    <p className="font-semibold text-red-700">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedBooking.totalAmount || 0)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-zinc-500">Ngày tạo</p>
+                    <p className="font-semibold text-zinc-900">
+                      {selectedBooking.createdAt ? format(parseISO(selectedBooking.createdAt), 'HH:mm dd/MM/yyyy') : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-zinc-500">Thanh toán lúc</p>
+                    <p className="font-semibold text-zinc-900">
+                      {selectedBooking.paidAt ? format(parseISO(selectedBooking.paidAt), 'HH:mm dd/MM/yyyy') : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-zinc-200 p-3">
+                  <p className="mb-2 font-semibold text-zinc-900">Danh sách vé ({selectedBooking.tickets?.length || 0})</p>
+                  {selectedBooking.tickets?.length ? (
+                    <div className="space-y-2">
+                      {selectedBooking.tickets.map((ticket) => (
+                        <div key={ticket.ticketId} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2">
+                          <span className="text-zinc-700">Ghế: {ticket.seatId}</span>
+                          <span className="font-semibold text-zinc-900">
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(ticket.price || 0)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-500">Không có dữ liệu vé.</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
