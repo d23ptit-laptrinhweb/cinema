@@ -49,4 +49,4 @@ vnpay:
   secret-key: I86EACU6F7UDSGB3XT7A6SH5DEESDRYV
   pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
   api-url: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
-  return-url: http://localhost:8080/api/v1/vnpay/return
+  return-url: https://elida-undepreciative-thomasena.ngrok-free.dev/v1/vnpay/return

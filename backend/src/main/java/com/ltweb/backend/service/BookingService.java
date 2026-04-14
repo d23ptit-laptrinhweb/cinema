@@ -82,15 +82,14 @@ public class BookingService {
         String bookingUserId = user.getId();
         for (Ticket ticket : selectedTickets) {
             String seatKey = getSeatKey(showtime.getId(), ticket.getSeat().getId());
-            Boolean locked = redisTemplate.opsForValue().setIfAbsent(seatKey, bookingUserId, 6, TimeUnit.MINUTES);
+            Boolean locked = redisTemplate.opsForValue().setIfAbsent(seatKey, bookingUserId, 10, TimeUnit.MINUTES);
 
             if (Boolean.FALSE.equals(locked)) {
                 unlockSeats(showtime.getId(), selectedTickets);
                 throw new AppException(ErrorCode.TICKET_NOT_AVAILABLE);
             }
 
-            // lock ghế xong broadcast qua WebSocket để cập nhật real time trạng thái hàng
-            // ghế
+           
             simpMessagingTemplate.convertAndSend(
                     "/topic/showtime/" + showtime.getId() + "/seats",
                     SeatStatusEvent.builder()
@@ -112,7 +111,7 @@ public class BookingService {
                 .status(BookingStatus.PENDING)
                 .paymentCreatedAt(LocalDateTime.now())
                 .paymentStatus(PaymentStatus.PENDING)
-                .expiresAt(LocalDateTime.now().plusMinutes(30))
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
                 .build();
 
         bookingRepository.save(booking);
@@ -141,7 +140,7 @@ public class BookingService {
         return toBookingResponse(booking);
     }
 
-    @PostAuthorize("returnObject.username == authentication.name")
+
     public BookingResponse getMyBookings(String bookingId) {
         var context = SecurityContextHolder.getContext();
         String username = Objects.requireNonNull(context.getAuthentication()).getName();

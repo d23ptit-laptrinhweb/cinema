@@ -41,7 +41,6 @@ public class RoomService {
         return toRoomResponse(roomRepository.save(room));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public List<RoomResponse> getAllRooms(String branchId, RoomStatus status) {
         if (branchId != null && status != null) {
             return roomRepository.findByBranchIdAndStatus(branchId, status).stream()
@@ -63,7 +62,6 @@ public class RoomService {
             .toList();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public RoomResponse getRoomById(Long id) {
         Room room = roomRepository.findById(id)
             .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));

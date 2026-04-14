@@ -1,13 +1,17 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const redirectAfterLogin = location.state?.redirectAfterLogin;
+  const checkoutState = location.state?.checkoutState;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,12 +25,15 @@ export default function Login() {
         if (response.refreshToken) {
           localStorage.setItem('refreshToken', response.refreshToken);
         }
-        navigate('/');
+        if (redirectAfterLogin) {
+          navigate(redirectAfterLogin, { state: checkoutState || null });
+        } else {
+          navigate('/');
+        }
       } else {
         setError('Đăng nhập thất bại. Không nhận được token.');
       }
     } catch (err) {
-      console.error(err);
       setError(err?.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
     } finally {
       setLoading(false);
@@ -34,22 +41,31 @@ export default function Login() {
   };
 
   return (
-    <div className="flex justify-center items-center py-20 px-4">
-      <div className="bg-slate-900 border border-slate-700 p-8 rounded-3xl shadow-2xl max-w-md w-full">
+    <div className="mx-auto flex max-w-6xl items-center justify-center px-4 py-12">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_20px_45px_rgba(0,0,0,0.12)] md:grid-cols-[1fr_1fr]">
+        <div className="relative hidden bg-black p-10 text-white md:block">
+          <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-red-600/30 blur-3xl" />
+          <h2 className="relative text-4xl font-black leading-tight">Trở lại rạp phim của bạn</h2>
+          <p className="relative mt-4 text-zinc-300">
+            Đăng nhập để theo dõi booking, thanh toán nhanh và lưu lịch sử vé.
+          </p>
+        </div>
+
+        <div className="p-8 md:p-10">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">Đăng Nhập</h2>
-          <p className="text-slate-400 text-sm">Chào mừng bạn quay lại với Xemphim</p>
+          <h2 className="mb-2 text-3xl font-black text-zinc-900">Đăng nhập</h2>
+          <p className="text-sm text-zinc-600">Chào mừng bạn quay lại với Xemphim</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/50 text-red-500 text-sm font-medium">
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-slate-400 text-sm font-medium mb-1.5" htmlFor="username">
+            <label className="mb-1.5 block text-sm font-medium text-zinc-700" htmlFor="username">
               Tên đăng nhập
             </label>
             <input
@@ -57,7 +73,7 @@ export default function Login() {
               type="text"
               required
               placeholder="username"
-              className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-colors"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 transition focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
@@ -65,10 +81,10 @@ export default function Login() {
 
           <div>
             <div className="flex justify-between items-center mb-1.5">
-              <label className="block text-slate-400 text-sm font-medium" htmlFor="password">
+              <label className="block text-sm font-medium text-zinc-700" htmlFor="password">
                 Mật khẩu
               </label>
-              <Link to="/forgot-password" className="text-sm text-rose-500 hover:text-rose-400">
+              <Link to="/forgot-password" className="text-sm font-semibold text-red-700 hover:text-red-800">
                 Quên mật khẩu?
               </Link>
             </div>
@@ -77,7 +93,7 @@ export default function Login() {
               type="password"
               required
               placeholder="••••••••"
-              className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-colors"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 transition focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -86,22 +102,23 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-8 bg-rose-500 hover:bg-rose-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-rose-500/30 hover:shadow-rose-500/50 disabled:opacity-70 flex justify-center items-center"
+            className="btn-primary mt-8 w-full"
           >
             {loading ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+              <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-white"></div>
             ) : (
-              'Đăng Nhập'
+              'Đăng nhập'
             )}
           </button>
         </form>
 
-        <p className="mt-8 text-center text-slate-400 text-sm">
+        <p className="mt-8 text-center text-sm text-zinc-600">
           Chưa có tài khoản?{' '}
-          <Link to="/register" className="text-rose-500 hover:text-rose-400 font-medium ml-1">
+          <Link to="/register" className="ml-1 font-semibold text-red-700 hover:text-red-800">
             Đăng ký ngay
           </Link>
         </p>
+        </div>
       </div>
     </div>
   );

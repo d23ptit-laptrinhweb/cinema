@@ -15,6 +15,7 @@ export default function BookingShowtimes() {
   const [rooms, setRooms] = useState([]);
   
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dates, setDates] = useState([]);
 
@@ -42,7 +43,7 @@ export default function BookingShowtimes() {
         setBranches(branchRes || []);
         setRooms(roomRes || []);
       } catch (error) {
-        console.error('Failed to fetch data for booking', error);
+        setError(error?.message || 'Không thể tải suất chiếu.');
       } finally {
         setLoading(false);
       }
@@ -53,20 +54,24 @@ export default function BookingShowtimes() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+      <div className="page-shell flex min-h-[50vh] items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div>
       </div>
     );
   }
 
   if (!film) {
-    return <div className="text-center text-white py-20">Không tìm thấy thông tin phim</div>;
+    return (
+      <div className="page-shell py-20">
+        <div className="card-soft p-10 text-center text-zinc-600">Không tìm thấy thông tin phim</div>
+      </div>
+    );
   }
 
   // Filter showtimes by selected Date
   const showtimesOnDate = showtimes.filter(st => {
     const stDate = parseISO(st.startTime);
-    return isSameDay(stDate, selectedDate);
+    return isSameDay(stDate, selectedDate) && st.status !== 'CANCELLED';
   });
 
   // Group by Branch
@@ -86,63 +91,74 @@ export default function BookingShowtimes() {
   }).filter(b => b.showtimes.length > 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      {/* Film header */}
-      <div className="flex flex-col md:flex-row gap-6 mb-12 bg-slate-800/50 p-6 rounded-2xl border border-white/5">
-        <img 
-          src={film.thumnbnail_url || "https://via.placeholder.com/150x225"} 
-          alt={film.filmName} 
-          className="w-32 rounded-lg shadow-lg"
-        />
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">{film.filmName}</h1>
-          <p className="text-slate-400 max-w-2xl">{film.description}</p>
+    <div className="page-shell space-y-8 py-6">
+      <section className="card-soft p-6 md:p-8">
+        <div className="flex flex-col gap-5 md:flex-row">
+          <img
+            src={film.thumnbnail_url || 'https://via.placeholder.com/150x225'}
+            alt={film.filmName}
+            className="w-28 rounded-xl border border-zinc-200 object-cover"
+          />
+          <div className="space-y-3">
+            <h1 className="text-3xl font-black text-zinc-900">{film.filmName}</h1>
+            <p className="max-w-3xl text-zinc-600">{film.description || 'Chưa có mô tả phim.'}</p>
+            <div className="inline-flex rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+              Chọn ngày và suất chiếu phù hợp
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Date Selector */}
-      <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-        <CalendarDaysIcon className="w-6 h-6 text-rose-500" />
-        Chọn Ngày Chiếu
-      </h2>
-      <div className="flex gap-4 overflow-x-auto pb-4 mb-12 hide-scrollbar">
+      <section className="card-soft p-6">
+        <h2 className="mb-5 flex items-center gap-2 text-xl font-black text-zinc-900">
+          <CalendarDaysIcon className="h-6 w-6 text-red-600" />
+          Chọn ngày chiếu
+        </h2>
+        <div className="hide-scrollbar flex gap-3 overflow-x-auto pb-2">
         {dates.map((date, idx) => {
           const isSelected = isSameDay(date, selectedDate);
           return (
             <button
               key={idx}
               onClick={() => setSelectedDate(date)}
-              className={`flex-shrink-0 flex flex-col items-center justify-center w-20 h-24 rounded-xl border transition-all ${
+              className={`flex h-24 w-20 flex-shrink-0 flex-col items-center justify-center rounded-xl border transition ${
                 isSelected 
-                  ? 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-500/30' 
-                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                  ? 'border-red-600 bg-red-600 text-white' 
+                  : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400'
               }`}
             >
-              <span className="text-sm">{idx === 0 ? 'Hôm nay' : format(date, 'EEEE', { locale: vi })}</span>
+              <span className="text-xs">{idx === 0 ? 'Hôm nay' : format(date, 'EEE', { locale: vi })}</span>
               <span className="text-2xl font-bold mt-1">{format(date, 'dd')}</span>
               <span className="text-xs">{format(date, 'MM/yyyy')}</span>
             </button>
           );
         })}
-      </div>
+        </div>
+      </section>
 
-      {/* Showtimes by Branch */}
-      <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-        <MapPinIcon className="w-6 h-6 text-rose-500" />
-        Chọn Rạp & Suất Chiếu
-      </h2>
+      <section className="space-y-5">
+        <h2 className="flex items-center gap-2 text-xl font-black text-zinc-900">
+          <MapPinIcon className="h-6 w-6 text-red-600" />
+          Chọn rạp và suất chiếu
+        </h2>
       
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {error}
+        </div>
+      )}
+
       {branchesWithShowtimes.length === 0 ? (
-        <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-12 text-center text-slate-400">
-          Không có suất chiếu nào vào ngày này. Vui lòng chọn ngày khác!
+        <div className="card-soft p-12 text-center text-zinc-600">
+          Không có suất chiếu vào ngày này. Vui lòng thử ngày khác.
         </div>
       ) : (
         <div className="space-y-6">
           {branchesWithShowtimes.map(branch => (
-            <div key={branch.branchId} className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
-              <div className="bg-slate-900/50 p-4 border-b border-slate-700">
-                <h3 className="text-lg font-bold text-white">{branch.name}</h3>
-                <p className="text-sm text-slate-400 mt-1">{branch.address}</p>
+            <div key={branch.branchId} className="card-soft overflow-hidden">
+              <div className="border-b border-zinc-200 bg-zinc-50 p-4">
+                <h3 className="text-lg font-black text-zinc-900">{branch.name}</h3>
+                <p className="mt-1 text-sm text-zinc-600">{branch.address}</p>
               </div>
               <div className="p-6">
                 <div className="flex flex-wrap gap-4">
@@ -152,12 +168,12 @@ export default function BookingShowtimes() {
                       <button
                         key={st.showtimeId}
                         onClick={() => navigate(`/booking/seat/${st.showtimeId}`)}
-                        className="group flex flex-col items-center bg-slate-900 border border-slate-700 hover:border-rose-500 rounded-lg p-3 transition-all hover:shadow-lg hover:shadow-rose-500/20"
+                        className="group flex flex-col items-center rounded-lg border border-zinc-200 bg-white p-3 transition hover:border-red-500 hover:bg-red-50"
                       >
-                        <span className="text-xl font-bold text-white group-hover:text-rose-400 transition-colors">
+                        <span className="text-xl font-black text-zinc-900 transition group-hover:text-red-700">
                           {format(parseISO(st.startTime), 'HH:mm')}
                         </span>
-                        <span className="text-xs text-slate-400 mt-1">
+                        <span className="mt-1 text-xs text-zinc-500">
                           {room ? room.name : 'Phòng chiếu'}
                         </span>
                       </button>
@@ -169,6 +185,7 @@ export default function BookingShowtimes() {
           ))}
         </div>
       )}
+      </section>
     </div>
   );
 }

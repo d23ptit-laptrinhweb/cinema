@@ -34,6 +34,7 @@ public class SecurityConfig {
             "/v1/vnpay/ipn",
             "/auth/forgot-password",
             "/auth/reset-password"
+
     };
 
     private final CustomUserDetailService userDetailsService;

@@ -47,28 +47,28 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-rose-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
+        <div className="absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-red-200/40 blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-red-100/50 blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
         {/* Card */}
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl shadow-lg shadow-rose-500/30 mb-4">
-              <ShieldCheckIcon className="w-8 h-8 text-white" />
+            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-red-600 shadow-lg shadow-red-600/30">
+              <ShieldCheckIcon className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
-            <p className="text-slate-500 text-sm mt-1">Đăng nhập để quản trị hệ thống</p>
+            <h1 className="text-2xl font-bold text-zinc-900">Bảng Quản Trị</h1>
+            <p className="mt-1 text-sm text-zinc-600">Đăng nhập để quản trị hệ thống</p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium flex items-center gap-2">
+            <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
               <span className="shrink-0">⚠️</span>
               {error}
             </div>
@@ -77,7 +77,7 @@ export default function AdminLogin() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-slate-400 text-sm font-medium mb-1.5" htmlFor="admin-username">
+              <label className="mb-1.5 block text-sm font-medium text-zinc-700" htmlFor="admin-username">
                 Tên đăng nhập
               </label>
               <input
@@ -86,14 +86,14 @@ export default function AdminLogin() {
                 required
                 autoFocus
                 placeholder="admin"
-                className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all placeholder:text-slate-600"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 transition-all placeholder:text-zinc-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-slate-400 text-sm font-medium mb-1.5" htmlFor="admin-password">
+              <label className="mb-1.5 block text-sm font-medium text-zinc-700" htmlFor="admin-password">
                 Mật khẩu
               </label>
               <input
@@ -101,7 +101,7 @@ export default function AdminLogin() {
                 type="password"
                 required
                 placeholder="••••••••"
-                className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all placeholder:text-slate-600"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 transition-all placeholder:text-zinc-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -110,21 +110,21 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-4 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 disabled:opacity-60 flex justify-center items-center gap-2"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 font-bold text-white transition-all hover:bg-red-700 disabled:opacity-60"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
               ) : (
                 <>
                   <ShieldCheckIcon className="w-5 h-5" />
-                  Đăng Nhập Admin
+                  Đăng Nhập Quản Trị
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-slate-800 text-center">
-            <a href="/" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
+          <div className="mt-6 border-t border-zinc-200 pt-6 text-center">
+            <a href="/" className="text-sm text-zinc-600 transition-colors hover:text-red-700">
               ← Quay về trang chủ
             </a>
           </div>

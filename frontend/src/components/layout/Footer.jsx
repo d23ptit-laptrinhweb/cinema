@@ -1,34 +1,34 @@
 export default function Footer() {
   return (
-    <footer className="bg-[#0f172a] border-t border-white/10 mt-auto">
+    <footer className="mt-auto border-t border-white/10 bg-black text-zinc-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-rose-400 to-rose-600 mb-4 inline-block">
+            <span className="mb-4 inline-block text-2xl font-black text-white">
               Xemphim
             </span>
-            <p className="text-slate-400 max-w-sm">
-              Trải nghiệm điện ảnh đỉnh cao với hệ thống đặt vé trực tuyến nhanh chóng, tiện lợi.
+            <p className="max-w-sm text-zinc-400">
+              Hệ thống đặt vé xem phim trực tuyến, thao tác nhanh, giao diện rõ ràng và theo dõi lịch sử vé dễ dàng.
             </p>
           </div>
           <div>
-            <h3 className="text-white font-semibold mb-4">Hỗ Trợ</h3>
+            <h3 className="mb-4 font-semibold text-white">Hỗ Trợ</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Điều khoản sử dụng</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Chính sách bảo mật</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Câu hỏi thường gặp</a></li>
+              <li><a href="#" className="text-zinc-400 transition hover:text-red-400">Điều khoản sử dụng</a></li>
+              <li><a href="#" className="text-zinc-400 transition hover:text-red-400">Chính sách bảo mật</a></li>
+              <li><a href="#" className="text-zinc-400 transition hover:text-red-400">Câu hỏi thường gặp</a></li>
             </ul>
           </div>
           <div>
-            <h3 className="text-white font-semibold mb-4">Kết Nối</h3>
+            <h3 className="mb-4 font-semibold text-white">Liên Hệ</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Facebook</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Instagram</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Twitter</a></li>
+              <li><a href="#" className="text-zinc-400 transition hover:text-red-400">Facebook</a></li>
+              <li><a href="#" className="text-zinc-400 transition hover:text-red-400">Instagram</a></li>
+              <li><a href="#" className="text-zinc-400 transition hover:text-red-400">Hotline: 1900 9999</a></li>
             </ul>
           </div>
         </div>
-        <div className="mt-12 pt-8 border-t border-white/10 text-center text-slate-500">
+        <div className="mt-12 border-t border-white/10 pt-8 text-center text-zinc-500">
           <p>&copy; {new Date().getFullYear()} Xemphim. All rights reserved.</p>
         </div>
       </div>

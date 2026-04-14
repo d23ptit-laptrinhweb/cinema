@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
-import { PlayIcon, StarIcon } from '@heroicons/react/24/solid';
+import { ClockIcon } from '@heroicons/react/24/outline';
 
 export default function Home() {
   const [nowShowing, setNowShowing] = useState([]);
   const [upcoming, setUpcoming] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('now');
 
   useEffect(() => {
@@ -19,7 +20,7 @@ export default function Home() {
         setNowShowing(nowShowingRes || []);
         setUpcoming(upcomingRes || []);
       } catch (error) {
-        console.error('Failed to fetch films:', error);
+        setError(error?.message || 'Không thể tải danh sách phim lúc này.');
       } finally {
         setLoading(false);
       }
@@ -29,8 +30,8 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+      <div className="page-shell flex min-h-[50vh] items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div>
       </div>
     );
   }
@@ -38,125 +39,88 @@ export default function Home() {
   const displayedMovies = activeTab === 'now' ? nowShowing : upcoming;
 
   return (
-    <div className="pb-16">
-      {/* Hero Section */}
-      <div className="relative h-[70vh] w-full bg-slate-900 overflow-hidden">
-        <div className="absolute inset-0">
-          <img 
-            src={nowShowing[0]?.thumnbnail_url || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2025&auto=format&fit=crop"} 
-            alt="Hero Banner"
-            className="w-full h-full object-cover opacity-40 blur-sm scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/50 to-transparent" />
-        </div>
-        
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            {nowShowing.length > 0 && (
-              <div className="max-w-2xl animate-fade-in-up">
-                <span className="inline-block py-1 px-3 rounded-full bg-rose-500/20 text-rose-400 text-sm font-semibold mb-4 border border-rose-500/30">
-                  Đang Chiếu
-                </span>
-                <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 leading-tight">
-                  {nowShowing[0].filmName}
-                </h1>
-                <p className="text-lg text-slate-300 mb-8 line-clamp-3">
-                  {nowShowing[0].description}
-                </p>
-                <div className="flex items-center gap-4">
-                  <Link 
-                    to={`/film/${nowShowing[0].filmId}`}
-                    className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-8 py-3 rounded-full font-semibold transition-all shadow-lg shadow-rose-500/30 hover:scale-105"
-                  >
-                    <PlayIcon className="w-5 h-5" />
-                    Đặt Vé Ngay
-                  </Link>
-                </div>
-              </div>
-            )}
+    <div className="pb-8">
+      <section className="page-shell space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="section-title">Danh sach phim</h2>
+          <div className="flex items-center rounded-xl border border-zinc-200 bg-white p-1">
+            <button
+              onClick={() => setActiveTab('now')}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                activeTab === 'now' ? 'bg-red-600 text-white' : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              Đang chiếu
+            </button>
+            <button
+              onClick={() => setActiveTab('upcoming')}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                activeTab === 'upcoming' ? 'bg-red-600 text-white' : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              Sắp chiếu
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Movie List with Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
-        {/* Tabs */}
-        <div className="flex items-center gap-2 mb-10">
-          <button
-            onClick={() => setActiveTab('now')}
-            className={`px-6 py-3 rounded-full font-bold text-sm transition-all ${
-              activeTab === 'now'
-                ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
-                : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700'
-            }`}
-          >
-            Đang Chiếu
-          </button>
-          <button
-            onClick={() => setActiveTab('upcoming')}
-            className={`px-6 py-3 rounded-full font-bold text-sm transition-all ${
-              activeTab === 'upcoming'
-                ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
-                : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700'
-            }`}
-          >
-            Sắp Chiếu
-          </button>
-        </div>
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        )}
 
-        {/* Movie Grid */}
-        <MovieSection title={activeTab === 'now' ? 'Phim Đang Chiếu' : 'Phim Sắp Chiếu'} movies={displayedMovies} />
-      </div>
+        <MovieSection title={activeTab === 'now' ? 'Phim đang chiếu' : 'Phim sắp chiếu'} movies={displayedMovies} />
+      </section>
     </div>
   );
 }
 
 function MovieSection({ title, movies }) {
-  if (!movies || movies.length === 0) return null;
+  if (!movies || movies.length === 0) {
+    return (
+      <div className="card-soft p-10 text-center text-zinc-600">
+        Chưa có phim trong danh mục này.
+      </div>
+    );
+  }
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-bold text-white relative pl-4 after:content-[''] after:absolute after:left-0 after:top-1/2 after:-translate-y-1/2 after:w-1.5 after:h-6 after:bg-rose-500 after:rounded-full">
-          {title}
-        </h2>
-        <Link to="#" className="text-rose-400 hover:text-rose-300 font-medium transition-colors">
-          Xem tất cả &rarr;
-        </Link>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-xl font-black text-zinc-900">{title}</h2>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {movies.map(movie => (
-          <Link key={movie.filmId} to={`/film/${movie.filmId}`} className="group">
-            <div className="relative aspect-[2/3] rounded-2xl overflow-hidden mb-4 bg-slate-800 shadow-xl">
-              <img 
-                src={movie.thumnbnail_url || "https://via.placeholder.com/400x600?text=No+Image"} 
+      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        {movies.map((movie) => (
+          <Link key={movie.filmId} to={`/film/${movie.filmId}`} className="card-soft group overflow-hidden rounded-2xl border-zinc-200 transition hover:-translate-y-1 hover:shadow-xl">
+            <div className="aspect-[2/3] overflow-hidden bg-zinc-100">
+              <img
+                src={movie.thumnbnail_url || 'https://via.placeholder.com/400x600?text=No+Image'}
                 alt={movie.filmName}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                <button className="bg-rose-500 hover:bg-rose-600 text-white w-full py-2 rounded-xl font-medium transition-colors shadow-lg shadow-rose-500/30">
-                  Mua Vé
-                </button>
-              </div>
-              {/* Age rating badge */}
-              {movie.ageRating && (
-               <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-xs font-bold font-mono text-orange-400 border border-white/10">
-                 {movie.ageRating}
-               </div>
-              )}
             </div>
-            <h3 className="font-semibold text-slate-200 group-hover:text-rose-400 transition-colors line-clamp-1 mb-1">
-              {movie.filmName}
-            </h3>
-            <div className="flex items-center text-sm text-slate-400">
-              <span className="flex items-center gap-1">
-                <StarIcon className="w-4 h-4 text-amber-400" /> 
-                {/* Random score for UI */}
-                {((Math.random() * 2) + 7).toFixed(1)}
-              </span>
-              <span className="mx-2">•</span>
-              <span>{movie.durationMinutes} phút</span>
+
+            <div className="space-y-2 p-4">
+              <h3 className="line-clamp-2 min-h-[48px] text-sm font-bold text-zinc-900 sm:text-base">
+                {movie.filmName}
+              </h3>
+
+              <div className="flex items-center gap-2 text-xs text-zinc-600 sm:text-sm">
+                <ClockIcon className="h-4 w-4 text-red-600" />
+                <span>{movie.durationMinutes || '--'} phút</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="rounded-full bg-zinc-100 px-2 py-1 text-[11px] font-semibold uppercase text-zinc-600">
+                  {movie.status || 'NOW'}
+                </span>
+                <span className="text-sm font-semibold text-red-700 group-hover:text-red-800">Đặt vé</span>
+              </div>
+
+              {movie.ageRating && (
+                <div className="pt-1 text-xs font-semibold text-zinc-500">Độ tuổi: {movie.ageRating}</div>
+              )}
             </div>
           </Link>
         ))}

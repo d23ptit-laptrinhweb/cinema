@@ -17,10 +17,10 @@ export default function Profile() {
         const userRes = await axiosClient.get('/my-info');
         setUser(userRes);
       } catch (error) {
-        console.error('Lỗi khi tải thông tin user', error);
         setErrorMsg(error?.message || JSON.stringify(error));
         if(error?.code === 401 || String(error).includes('401') || error?.status === 401) {
            localStorage.removeItem('token');
+           localStorage.removeItem('refreshToken');
            navigate('/login');
            return;
         }
@@ -30,8 +30,7 @@ export default function Profile() {
         const bookingRes = await axiosClient.get('/booking/my-bookings/list');
         setBookings(bookingRes || []);
       } catch (error) {
-        console.error('Lỗi khi tải lịch sử đặt vé', error);
-        // Không block trang nếu chỉ booking lỗi
+        setErrorMsg((prev) => prev || error?.message || null);
       }
 
       setLoading(false);
@@ -41,107 +40,136 @@ export default function Profile() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     navigate('/');
+  };
+
+  const sortedBookings = [...bookings].sort((a, b) => {
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
+
+  const isExpiredBooking = (booking) => {
+    if (booking?.status !== 'PENDING') return false;
+    if (!booking?.expiresAt) return false;
+    return new Date(booking.expiresAt).getTime() < Date.now();
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+      <div className="page-shell flex min-h-[50vh] items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div>
       </div>
     );
   }
 
   if (errorMsg) {
     return (
-      <div className="text-center py-20 text-white">
-        <h2 className="text-2xl mb-4 text-red-500">Lỗi lấy dữ liệu API!</h2>
-        <p className="mb-4">Chi tiết: {errorMsg}</p>
-        <button onClick={() => navigate('/login')} className="bg-slate-700 px-6 py-2 rounded-xl">Đăng nhập lại</button>
+      <div className="page-shell py-20">
+        <div className="card-soft p-10 text-center">
+          <h2 className="mb-4 text-2xl font-black text-red-700">Lỗi tải dữ liệu API</h2>
+          <p className="mb-5 text-zinc-600">Chi tiết: {errorMsg}</p>
+          <button onClick={() => navigate('/login')} className="btn-primary">Đăng nhập lại</button>
+        </div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="text-center py-20 text-white">
-        <h2 className="text-2xl mb-4">Vui lòng đăng nhập để xem thông tin!</h2>
-        <button onClick={() => navigate('/login')} className="bg-rose-500 px-6 py-2 rounded-xl">Đăng Nhập</button>
+      <div className="page-shell py-20">
+        <div className="card-soft p-10 text-center">
+          <h2 className="mb-4 text-2xl font-black text-zinc-900">Vui lòng đăng nhập để xem thông tin</h2>
+          <button onClick={() => navigate('/login')} className="btn-primary">Đăng nhập</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-8">
-      {/* Sidebar Info */}
-      <div className="w-full md:w-80 flex-shrink-0 space-y-6">
-        <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 text-center shadow-2xl relative">
-          <button onClick={handleLogout} className="absolute top-4 right-4 text-slate-400 hover:text-rose-500 transition-colors" title="Đăng Xuất">
-            <ArrowRightOnRectangleIcon className="w-6 h-6" />
+    <div className="page-shell flex flex-col gap-8 py-6 md:flex-row">
+      <div className="w-full flex-shrink-0 space-y-6 md:w-80">
+        <div className="card-soft relative p-8 text-center">
+          <button onClick={handleLogout} className="absolute right-4 top-4 text-zinc-400 transition hover:text-red-600" title="Đăng xuất">
+            <ArrowRightOnRectangleIcon className="h-6 w-6" />
           </button>
           
-          <UserCircleIcon className="w-24 h-24 text-rose-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white tracking-wide">{user.username}</h2>
-          <p className="text-slate-400 mb-6">{user.email}</p>
+          <UserCircleIcon className="mx-auto mb-4 h-24 w-24 text-red-600" />
+          <h2 className="text-2xl font-black tracking-wide text-zinc-900">{user.username}</h2>
+          <p className="mb-6 text-zinc-600">{user.email}</p>
 
-          <div className="text-left space-y-4 border-t border-slate-700 pt-6">
+          <div className="space-y-4 border-t border-zinc-200 pt-6 text-left">
             <div>
-              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider block mb-1">Số điện thoại</span>
-              <span className="text-slate-300 font-medium">{user.phone || 'Chưa cập nhật'}</span>
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-500">So dien thoai</span>
+              <span className="font-medium text-zinc-800">{user.phoneNumber || 'Chưa cập nhật'}</span>
             </div>
             <div>
-              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider block mb-1">Quyền</span>
-              <span className="text-slate-300 font-medium bg-slate-800 px-2 py-0.5 rounded">{user.role || 'USER'}</span>
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-500">Quyền</span>
+              <span className="rounded bg-zinc-100 px-2 py-0.5 font-medium text-zinc-800">{user.role || 'USER'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content: Booking History */}
-      <div className="flex-1 bg-slate-900 border border-slate-700 rounded-3xl p-6 md:p-10 shadow-2xl">
-        <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 border-b border-slate-700 pb-4">
-          <TicketIcon className="w-7 h-7 text-rose-500" />
-          Lịch Sử Đặt Vé
+      <div className="card-soft flex-1 p-6 md:p-10">
+        <h3 className="mb-6 flex items-center gap-2 border-b border-zinc-200 pb-4 text-2xl font-black text-zinc-900">
+          <TicketIcon className="h-7 w-7 text-red-600" />
+          Lịch sử đặt vé
         </h3>
 
         {bookings.length === 0 ? (
           <div className="text-center py-10">
-            <p className="text-slate-400 mb-4">Bạn chưa có giao dịch nào.</p>
-            <button onClick={() => navigate('/')} className="text-rose-500 font-medium hover:underline">
+            <p className="mb-4 text-zinc-600">Bạn chưa có giao dịch nào.</p>
+            <button onClick={() => navigate('/')} className="font-semibold text-red-700 hover:text-red-800">
               Khám phá phim ngay
             </button>
           </div>
         ) : (
           <div className="space-y-6">
-            {bookings.map(booking => (
-              <div key={booking.bookingId} className="bg-slate-800 rounded-2xl border border-slate-600 p-6 flex flex-col md:flex-row gap-6 hover:border-rose-500/50 transition-colors">
+            {sortedBookings.map((booking) => (
+              <button
+                key={booking.bookingId}
+                onClick={() => navigate(`/booking/history/${booking.bookingId}`)}
+                className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-left transition hover:border-red-300 hover:bg-red-50/40"
+              >
                 <div className="flex-1 space-y-2">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                    <span className="text-xs text-slate-400 font-mono">Mã Đặt Vé: {booking.bookingId}</span>
-                    <h4 className="text-xl font-bold text-rose-400 mt-1">Giao dịch vé phim</h4>
+                      <span className="font-mono text-xs text-zinc-500">Mã đặt vé: {booking.bookingCode || booking.bookingId}</span>
+                      <h4 className="mt-1 text-xl font-black text-zinc-900">Giao dịch vé phim</h4>
                     </div>
-                    {booking.status === 'PAID' ? (
-                       <span className="bg-green-500/20 text-green-500 border border-green-500/30 px-3 py-1 rounded font-bold text-sm">Đã Thanh Toán</span>
+                    {isExpiredBooking(booking) ? (
+                       <span className="rounded border border-zinc-300 bg-zinc-100 px-3 py-1 text-sm font-bold text-zinc-700">Hết hạn</span>
+                    ) : booking.paymentStatus === 'PAID' ? (
+                       <span className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">Đã thanh toán</span>
                     ) : booking.status === 'CANCELLED' ? (
-                       <span className="bg-red-500/20 text-red-500 border border-red-500/30 px-3 py-1 rounded font-bold text-sm">Đã Hủy</span>
+                       <span className="rounded border border-red-300 bg-red-50 px-3 py-1 text-sm font-bold text-red-700">Đã hủy</span>
                     ) : (
-                       <span className="bg-amber-500/20 text-amber-500 border border-amber-500/30 px-3 py-1 rounded font-bold text-sm">{booking.status}</span>
+                       <span className="rounded border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-bold text-amber-700">{booking.status}</span>
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-2 text-sm gap-y-2">
+                  <div className="grid grid-cols-2 gap-y-2 text-sm">
                      <div>
-                       <span className="text-slate-500 block">Ngày đặt</span>
-                       <span className="text-slate-200">{booking.bookingTime ? format(parseISO(booking.bookingTime), 'HH:mm dd/MM/yyyy') : 'N/A'}</span>
+                       <span className="block text-zinc-500">Ngày đặt</span>
+                       <span className="text-zinc-800">
+                        {booking.createdAt ? format(parseISO(booking.createdAt), 'HH:mm dd/MM/yyyy') : 'N/A'}
+                       </span>
                      </div>
                      <div>
-                       <span className="text-slate-500 block">Tổng tiền</span>
-                       <span className="text-rose-400 font-bold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(booking.totalAmount || 0)}</span>
+                       <span className="block text-zinc-500">Tổng tiền</span>
+                       <span className="font-bold text-red-700">
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(booking.totalAmount || 0)}
+                       </span>
                      </div>
                   </div>
+
+                  <div className="mt-3 border-t border-zinc-200 pt-3 text-sm text-zinc-600">
+                    Số vé: <span className="font-semibold text-zinc-900">{booking.tickets?.length || 0}</span>
+                  </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}

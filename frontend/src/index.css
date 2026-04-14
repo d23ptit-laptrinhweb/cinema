@@ -2,35 +2,87 @@
 
 @layer base {
   :root {
-    --background: 220 13% 18%; /* Dark Gray/Blue for cinema feel by default */
-    --foreground: 0 0% 100%;
-    
-    --primary: 346 87% 53%; /* Red/Pink accent */
-    --primary-foreground: 0 0% 100%;
+    --cinema-red: #d6102d;
+    --cinema-red-dark: #a80d23;
+    --surface: #ffffff;
+    --surface-muted: #f4f4f5;
+    --ink: #111111;
+    --ink-soft: #52525b;
   }
 
   * {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: #e4e4e7;
   }
 
   body {
-    background-color: var(--background);
-    color: var(--foreground);
-    @apply bg-[#0f172a] text-slate-200 overflow-x-hidden;
+    @apply overflow-x-hidden;
+    background:
+      radial-gradient(circle at 100% 0%, #ffe2e8 0%, transparent 30%),
+      radial-gradient(circle at 0% 100%, #ffd9e0 0%, transparent 25%),
+      var(--surface);
+    color: var(--ink);
+    font-family: "Segoe UI", "Helvetica Neue", sans-serif;
   }
 }
 
-/* Custom Scrollbar for sleek cinema feel */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #f4f4f5;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 4px;
+  background: #d4d4d8;
+  border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #a1a1aa;
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .card-soft {
+    @apply rounded-3xl border border-black/10 bg-white shadow-[0_12px_35px_rgba(0,0,0,0.08)];
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-5 py-3 font-semibold text-zinc-700 transition hover:border-zinc-900 hover:text-black;
+  }
+
+  .section-title {
+    @apply text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer utilities {
+  .animate-rise {
+    animation: rise 400ms ease-out;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

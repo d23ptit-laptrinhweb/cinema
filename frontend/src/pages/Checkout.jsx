@@ -9,70 +9,67 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [bookingCode, setBookingCode] = useState('');
 
   const { showtime, film, room, selectedSeats, totalAmount } = location.state || {};
 
   if (!showtime || !selectedSeats) {
     return (
-      <div className="text-center py-20 text-white">
-        <h2 className="text-2xl mb-4">Không có thông tin thanh toán</h2>
-        <button onClick={() => navigate('/')} className="text-rose-500 hover:underline">Về trang chủ</button>
+      <div className="page-shell py-20 text-center">
+        <div className="card-soft p-10">
+          <h2 className="mb-4 text-2xl font-black text-zinc-900">Không có thông tin thanh toán</h2>
+          <button onClick={() => navigate('/')} className="font-semibold text-red-700 hover:text-red-800">
+            Về trang chủ
+          </button>
+        </div>
       </div>
     );
   }
 
   const handlePayment = async () => {
-    setLoading(true);
-    setError('');
-    
-    // Check authentication here, if not logged in, redirect to login
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Vui lòng đăng nhập để tiếp tục!");
-      // Save state to localStorage to restore after login if needed
-      // localStorage.setItem('pendingBooking', JSON.stringify(location.state));
-      // navigate('/login');
-      // For now, let's just proceed in case auth is not fully strictly enforced or we will test it.
+      navigate('/login', { state: { redirectAfterLogin: '/checkout', checkoutState: location.state } });
+      return;
     }
 
+    setLoading(true);
+    setError('');
+
     try {
-      // 1. Create Booking
-      const seatIds = selectedSeats.map(s => s.seatId);
+      const seatIds = selectedSeats.map((s) => s.seatId);
       const bookingRes = await axiosClient.post('/booking', {
         showtimeId: showtime.showtimeId,
-        seatIds: seatIds
+        seatIds,
       });
 
-      if (bookingRes && bookingRes.bookingId) {
-        // 2. Request VNPay URL
-        // backend expects amount as Long representing VND. Some APIs require amount * 100 for VNPay. 
-        // We will pass the exact amount, assuming backend VnpayService handles the * 100 correctly, or we do it here.
-        // Let's pass the amount. The standard VNPay takes amount * 100, but in `CreateVnpayRequest` it's just `amount`. Let's assume backend multiplies by 100.
-        const vnpayRes = await axiosClient.post('/v1/vnpay/payment-url', {
-          amount: totalAmount,
-          orderId: bookingRes.bookingId,
-          orderInfo: `Thanh toan ve phim ${film.filmName}`,
-          orderType: "bill",
-          language: "vn"
-        });
-
-        // 3. Redirect
-        if (vnpayRes && vnpayRes.paymentUrl) {
-          window.location.href = vnpayRes.paymentUrl;
-        } else if (vnpayRes) {
-           // Maybe the map is returned directly
-           const url = vnpayRes.paymentUrl || vnpayRes.vnpUrl || Object.values(vnpayRes).find(v => typeof v === 'string' && v.startsWith('http'));
-           if(url) {
-               window.location.href = url;
-           } else {
-               // Fallback if we don't know the exact key
-               console.log("VNPAY Response:", vnpayRes);
-               setError("Không nhận được URL thanh toán từ server.");
-           }
-        }
+      if (!bookingRes?.bookingCode) {
+        setError('Không tạo được đơn đặt vé. Vui lòng thử lại.');
+        return;
       }
+
+      setBookingCode(bookingRes.bookingCode);
+
+      const vnpayRes = await axiosClient.post('/v1/vnpay/payment-url', {
+        amount: Math.round(Number(totalAmount || 0)),
+        orderId: bookingRes.bookingCode,
+        orderInfo: `Thanh toan ve phim ${film.filmName}`,
+        orderType: 'billpayment',
+        language: 'vn',
+      });
+
+      const paymentUrl =
+        vnpayRes?.paymentUrl ||
+        vnpayRes?.vnpUrl ||
+        Object.values(vnpayRes || {}).find((v) => typeof v === 'string' && v.startsWith('http'));
+
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+        return;
+      }
+
+      setError('Không nhận được đường dẫn thanh toán VNPay.');
     } catch (err) {
-      console.error(err);
       setError(err?.message || 'Có lỗi xảy ra khi tạo giao dịch.');
     } finally {
       setLoading(false);
@@ -80,40 +77,45 @@ export default function Checkout() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
-        <CreditCardIcon className="w-8 h-8 text-rose-500" />
-        Xác Nhận Thanh Toán
-      </h1>
+    <div className="page-shell py-6">
+      <div className="mb-6 flex items-center gap-3">
+        <CreditCardIcon className="h-8 w-8 text-red-600" />
+        <h1 className="text-3xl font-black text-zinc-900">Xác nhận thanh toán</h1>
+      </div>
 
-      <div className="bg-slate-900 rounded-3xl p-8 border border-slate-700 shadow-2xl">
+      <div className="card-soft p-6 md:p-8">
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/50 text-red-500 font-medium">
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 font-medium text-red-700">
             {error}
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Film Info */}
+        {bookingCode && (
+          <div className="mb-6 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+            Mã giao dịch: <span className="font-bold">{bookingCode}</span>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-8 md:flex-row">
           <div className="flex-1 space-y-6">
-            <h3 className="text-xl font-bold text-white border-b border-slate-700 pb-4">Thông Tin Vé</h3>
+            <h3 className="border-b border-zinc-200 pb-4 text-xl font-black text-zinc-900">Thông tin vé</h3>
             
             <div className="flex gap-4">
-              <img src={film.thumnbnail_url} alt="Poster" className="w-24 rounded-lg shadow-md" />
+              <img src={film.thumnbnail_url} alt="Poster" className="w-24 rounded-lg border border-zinc-200" />
               <div>
-                <h4 className="text-xl font-bold text-rose-400">{film.filmName}</h4>
-                <p className="text-slate-400 mt-1">{room?.name || 'Phòng chiếu'}</p>
-                <p className="text-white mt-1 font-medium">
+                <h4 className="text-xl font-black text-zinc-900">{film.filmName}</h4>
+                <p className="mt-1 text-zinc-600">{room?.name || 'Phòng chiếu'}</p>
+                <p className="mt-1 font-semibold text-zinc-800">
                   {format(parseISO(showtime.startTime), 'HH:mm - dd/MM/yyyy')}
                 </p>
               </div>
             </div>
 
-            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-              <span className="text-slate-400 block mb-2">Ghế đã chọn:</span>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <span className="mb-2 block text-zinc-600">Ghế đã chọn:</span>
               <div className="flex flex-wrap gap-2">
-                {selectedSeats.map(s => (
-                  <span key={s.seatId} className="px-3 py-1 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-md font-bold">
+                {selectedSeats.map((s) => (
+                  <span key={s.seatId} className="rounded-md border border-red-200 bg-red-50 px-3 py-1 font-bold text-red-700">
                     {s.seatCode}
                   </span>
                 ))}
@@ -121,22 +123,20 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Payment Summary */}
           <div className="md:w-80 space-y-6">
-            <h3 className="text-xl font-bold text-white border-b border-slate-700 pb-4">Hóa Đơn</h3>
+            <h3 className="border-b border-zinc-200 pb-4 text-xl font-black text-zinc-900">Hóa đơn</h3>
             
             <div className="space-y-3 text-sm">
-              {selectedSeats.map(s => (
-                <div key={s.seatId} className="flex justify-between items-center text-slate-300">
+              {selectedSeats.map((s) => (
+                <div key={s.seatId} className="flex items-center justify-between text-zinc-700">
                   <span>Ghế {s.seatCode} ({s.seatType})</span>
-                  {/* Prices are already calculated during booking */}
                 </div>
               ))}
             </div>
 
-            <div className="pt-4 border-t border-slate-700 flex justify-between items-end">
-              <span className="text-slate-400">Tổng cộng</span>
-              <span className="text-3xl font-bold text-rose-500">
+            <div className="flex items-end justify-between border-t border-zinc-200 pt-4">
+              <span className="text-zinc-600">Tổng cộng</span>
+              <span className="text-3xl font-black text-red-700">
                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount)}
               </span>
             </div>
@@ -144,19 +144,19 @@ export default function Checkout() {
             <button
               onClick={handlePayment}
               disabled={loading}
-              className="w-full mt-6 flex justify-center items-center gap-2 bg-[#005BAA] hover:bg-[#004a8a] text-white py-4 rounded-xl font-bold transition-all shadow-lg hover:shadow-[#005BAA]/30 disabled:opacity-50"
+              className="btn-primary mt-6 w-full"
             >
               {loading ? (
-                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
+                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-white"></div>
               ) : (
                 <>
-                  <CheckCircleIcon className="w-6 h-6" />
-                  Thanh Toán VNPay
+                  <CheckCircleIcon className="h-6 w-6" />
+                  Thanh toán VNPay
                 </>
               )}
             </button>
-            <p className="text-xs text-center text-slate-500 mt-4">
-              Bằng việc tiếp tục, bạn đồng ý với các điều khoản dịch vụ của Xemphim.
+            <p className="mt-4 text-center text-xs text-zinc-500">
+              Tiếp tục đồng nghĩa với việc bạn đồng ý điều khoản sử dụng của Xemphim.
             </p>
           </div>
         </div>

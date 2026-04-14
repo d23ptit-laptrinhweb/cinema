@@ -47,7 +47,7 @@ axiosClient.interceptors.response.use(
     const originalRequest = error.config;
 
     // Nếu mã lỗi là 401 Unauthorized và chưa thử qua refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       
       // Nếu có tác vụ refresh đang chạy, xin vào hàng đợi
       if (isRefreshing) {
@@ -82,12 +82,14 @@ axiosClient.interceptors.response.use(
             const result = data.result || data;
             const newAccessToken = result.accessToken;
             const newRefreshToken = result.refreshToken;
+
+            if (!newAccessToken || !newRefreshToken) {
+              throw new Error('Refresh token response is invalid');
+            }
             
             // Cập nhật local storage
             localStorage.setItem('token', newAccessToken);
-            if (newRefreshToken) {
-              localStorage.setItem('refreshToken', newRefreshToken);
-            }
+            localStorage.setItem('refreshToken', newRefreshToken);
             
             // Cập nhật Authorization header
             axiosClient.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;

@@ -116,22 +116,22 @@ export default function AdminFilms() {
     }));
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div></div>;
+  if (loading) return <div className="flex justify-center py-20"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div></div>;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Danh sách phim ({films.length})</h2>
-        <button onClick={openCreateModal} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl font-medium transition-colors">
+        <h2 className="text-xl font-bold text-zinc-900">Danh sách phim ({films.length})</h2>
+        <button onClick={openCreateModal} className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 font-medium text-white transition hover:bg-red-700">
           <PlusIcon className="w-5 h-5" /> Thêm phim
         </button>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-800">
+              <tr className="border-b border-zinc-200 text-left text-zinc-500">
                 <th className="px-4 py-3">Poster</th>
                 <th className="px-4 py-3">Tên phim</th>
                 <th className="px-4 py-3">Thời lượng</th>
@@ -142,12 +142,12 @@ export default function AdminFilms() {
             </thead>
             <tbody>
               {films.map(film => (
-                <tr key={film.filmId} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                <tr key={film.filmId} className="border-b border-zinc-100 transition hover:bg-zinc-50">
                   <td className="px-4 py-3">
-                    {film.thumnbnail_url ? <img src={film.thumnbnail_url} alt="" className="w-12 h-16 object-cover rounded" /> : <div className="w-12 h-16 bg-slate-700 rounded" />}
+                    {film.thumnbnail_url ? <img src={film.thumnbnail_url} alt="" className="h-16 w-12 rounded object-cover" /> : <div className="h-16 w-12 rounded bg-zinc-200" />}
                   </td>
-                  <td className="px-4 py-3 font-medium text-white max-w-[200px] truncate">{film.filmName}</td>
-                  <td className="px-4 py-3 text-slate-300">{film.durationMinutes} phút</td>
+                  <td className="max-w-[200px] truncate px-4 py-3 font-medium text-zinc-900">{film.filmName}</td>
+                  <td className="px-4 py-3 text-zinc-600">{film.durationMinutes} phút</td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 text-xs font-bold">{film.ageRating}</span>
                   </td>
@@ -160,8 +160,8 @@ export default function AdminFilms() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <button onClick={() => openEditModal(film)} className="p-2 text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors"><PencilIcon className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(film.filmId)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"><TrashIcon className="w-4 h-4" /></button>
+                      <button onClick={() => openEditModal(film)} className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-sky-50 hover:text-sky-600"><PencilIcon className="h-4 w-4" /></button>
+                      <button onClick={() => handleDelete(film.filmId)} className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-red-50 hover:text-red-600"><TrashIcon className="h-4 w-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -174,20 +174,20 @@ export default function AdminFilms() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">{editingFilm ? 'Sửa phim' : 'Thêm phim mới'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white"><XMarkIcon className="w-6 h-6" /></button>
+              <h3 className="text-xl font-bold text-zinc-900">{editingFilm ? 'Sửa phim' : 'Thêm phim mới'}</h3>
+              <button onClick={() => setShowModal(false)} className="text-zinc-500 hover:text-zinc-900"><XMarkIcon className="w-6 h-6" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Tên phim *</label>
-                  <input required className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-rose-500" value={formData.filmName} onChange={e => setFormData({ ...formData, filmName: e.target.value })} />
+                  <label className="mb-1 block text-sm text-zinc-600">Tên phim *</label>
+                  <input required className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none" value={formData.filmName} onChange={e => setFormData({ ...formData, filmName: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Thời lượng (phút)</label>
-                  <input type="number" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-rose-500" value={formData.durationMinutes} onChange={e => setFormData({ ...formData, durationMinutes: e.target.value })} />
+                  <label className="mb-1 block text-sm text-zinc-600">Thời lượng (phút)</label>
+                  <input type="number" className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none" value={formData.durationMinutes} onChange={e => setFormData({ ...formData, durationMinutes: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-sm text-slate-400 mb-1">Xếp hạng tuổi</label>
@@ -219,36 +219,36 @@ export default function AdminFilms() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Ảnh Poster (Upload hoặc nhập URL)</label>
+                <label className="block text-sm text-zinc-600 mb-1">Ảnh Poster (Upload hoặc nhập URL)</label>
                 <div className="flex flex-col gap-2">
-                  <input type="file" accept="image/*" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:border-rose-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rose-500/10 file:text-rose-500 hover:file:bg-rose-500/20" onChange={e => { setImageFile(e.target.files[0]); if (e.target.files[0]) { setFormData({ ...formData, thumnbnail_url: '' }); } }} />
+                  <input type="file" accept="image/*" className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2 text-zinc-700 file:mr-4 file:rounded-full file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-red-700" onChange={e => { setImageFile(e.target.files[0]); if (e.target.files[0]) { setFormData({ ...formData, thumnbnail_url: '' }); } }} />
                   {!imageFile && (
-                    <input className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-rose-500" placeholder="Hoặc nhập URL..." value={formData.thumnbnail_url} onChange={e => setFormData({ ...formData, thumnbnail_url: e.target.value })} />
+                    <input className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none" placeholder="Hoặc nhập URL..." value={formData.thumnbnail_url} onChange={e => setFormData({ ...formData, thumnbnail_url: e.target.value })} />
                   )}
                   {(imageFile || formData.thumnbnail_url) && (
-                    <div className="mt-2 w-32 aspect-[2/3] rounded-lg overflow-hidden bg-slate-800 border border-slate-700 mx-auto sm:mx-0">
+                    <div className="mx-auto mt-2 aspect-[2/3] w-32 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 sm:mx-0">
                       <img src={imageFile ? URL.createObjectURL(imageFile) : formData.thumnbnail_url} alt="Preview" className="w-full h-full object-cover" />
                     </div>
                   )}
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Mô tả</label>
-                <textarea rows={3} className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-rose-500 resize-none" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                <label className="block text-sm text-zinc-600 mb-1">Mô tả</label>
+                <textarea rows={3} className="w-full resize-none rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Thể loại</label>
+                <label className="block text-sm text-zinc-600 mb-2">Thể loại</label>
                 <div className="flex flex-wrap gap-2">
                   {genres.map(g => (
-                    <button type="button" key={g.id} onClick={() => toggleGenre(g.id)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${formData.genreIds.includes(g.id) ? 'bg-rose-500 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-500'}`}>
+                    <button type="button" key={g.id} onClick={() => toggleGenre(g.id)} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${formData.genreIds.includes(g.id) ? 'bg-red-600 text-white' : 'border border-zinc-300 bg-zinc-50 text-zinc-600 hover:border-zinc-400'}`}>
                       {g.name}
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-slate-400 hover:text-white bg-slate-800 rounded-xl transition-colors">Huỷ</button>
-                <button type="submit" disabled={isUploading} className="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50">
+              <div className="flex justify-end gap-3 border-t border-zinc-200 pt-4">
+                <button type="button" onClick={() => setShowModal(false)} className="rounded-xl bg-zinc-100 px-5 py-2.5 text-zinc-600 transition-colors hover:text-zinc-900">Huỷ</button>
+                <button type="submit" disabled={isUploading} className="rounded-xl bg-red-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50">
                   {isUploading ? 'Đang lưu...' : (editingFilm ? 'Cập nhật' : 'Tạo mới')}
                 </button>
               </div>

@@ -35,29 +35,29 @@ export default function AdminGenres() {
     catch (err) { alert('Lỗi: ' + (err?.message || JSON.stringify(err))); }
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div></div>;
+  if (loading) return <div className="flex justify-center py-20"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div></div>;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Thể loại ({genres.length})</h2>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl font-medium transition-colors">
+        <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 font-medium text-white transition hover:bg-red-700">
           <PlusIcon className="w-5 h-5" /> Thêm thể loại
         </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {genres.map(g => (
-          <div key={g.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between hover:border-slate-700 transition-colors">
+          <div key={g.id} className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:shadow-md">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-violet-500/10 rounded-xl">
-                <TagIcon className="w-5 h-5 text-violet-500" />
+              <div className="rounded-xl bg-red-50 p-2.5">
+                <TagIcon className="h-5 w-5 text-red-700" />
               </div>
-              <span className="text-white font-medium">{g.name}</span>
+              <span className="font-medium text-zinc-900">{g.name}</span>
             </div>
             <div className="flex gap-1">
-              <button onClick={() => openEdit(g)} className="p-2 text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors"><PencilIcon className="w-4 h-4" /></button>
-              <button onClick={() => handleDelete(g.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"><TrashIcon className="w-4 h-4" /></button>
+              <button onClick={() => openEdit(g)} className="rounded-lg p-2 text-zinc-500 transition hover:bg-sky-50 hover:text-sky-600"><PencilIcon className="w-4 h-4" /></button>
+              <button onClick={() => handleDelete(g.id)} className="rounded-lg p-2 text-zinc-500 transition hover:bg-red-50 hover:text-red-600"><TrashIcon className="w-4 h-4" /></button>
             </div>
           </div>
         ))}
@@ -65,19 +65,19 @@ export default function AdminGenres() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full" onClick={e => e.stopPropagation()}>
+          <div className="max-w-sm w-full rounded-2xl border border-zinc-200 bg-white p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">{editing ? 'Sửa thể loại' : 'Thêm thể loại'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white"><XMarkIcon className="w-6 h-6" /></button>
+              <h3 className="text-xl font-bold text-zinc-900">{editing ? 'Sửa thể loại' : 'Thêm thể loại'}</h3>
+              <button onClick={() => setShowModal(false)} className="text-zinc-500 hover:text-zinc-900"><XMarkIcon className="w-6 h-6" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Tên thể loại *</label>
-                <input required autoFocus className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-rose-500" value={name} onChange={e => setName(e.target.value)} />
+                <label className="block text-sm text-zinc-600 mb-1">Tên thể loại *</label>
+                <input required autoFocus className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none" value={name} onChange={e => setName(e.target.value)} />
               </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-slate-400 hover:text-white bg-slate-800 rounded-xl transition-colors">Huỷ</button>
-                <button type="submit" className="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-medium transition-colors">{editing ? 'Cập nhật' : 'Tạo mới'}</button>
+              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200">
+                <button type="button" onClick={() => setShowModal(false)} className="rounded-xl bg-zinc-100 px-5 py-2.5 text-zinc-600 transition hover:text-zinc-900">Huỷ</button>
+                <button type="submit" className="rounded-xl bg-red-600 px-5 py-2.5 font-medium text-white transition hover:bg-red-700">{editing ? 'Cập nhật' : 'Tạo mới'}</button>
               </div>
             </form>
           </div>

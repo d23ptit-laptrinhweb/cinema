@@ -5,6 +5,12 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation(); // Dùng location để trigger re-render khi chuyển trang
   const token = localStorage.getItem('token');
+  const adminToken = localStorage.getItem('adminToken');
+
+  const links = [
+    { to: '/', label: 'Trang chủ' },
+    { to: '/profile', label: 'Vé của tôi', auth: true },
+  ];
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -13,42 +19,64 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#0f172a]/90 backdrop-blur-md border-b border-white/10">
+    <nav className="sticky top-0 z-50 border-b border-white/10 bg-black/95 text-white backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo & Main nav */}
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2 group">
-              <TicketIcon className="w-8 h-8 text-rose-500 group-hover:scale-110 transition-transform duration-300" />
-              <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-rose-400 to-rose-600">
+              <TicketIcon className="h-8 w-8 text-red-500 transition-transform duration-300 group-hover:scale-110" />
+              <span className="text-2xl font-black tracking-tight text-white">
                 Xemphim
               </span>
             </Link>
-            <div className="hidden md:flex gap-6">
-              <Link to="/cinemas" className="text-slate-300 hover:text-white transition-colors">Rạp</Link>
+            <div className="hidden gap-6 md:flex">
+              {links
+                .filter((item) => !item.auth || token)
+                .map((item) => {
+                  const active = location.pathname === item.to;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={`text-sm font-semibold transition ${active ? 'text-red-400' : 'text-zinc-300 hover:text-white'}`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
             </div>
           </div>
 
-          {/* User actions */}
           <div className="flex items-center gap-4">
             {token ? (
               <>
-                <Link to="/profile" className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
-                  <UserCircleIcon className="w-6 h-6" />
-                  <span className="hidden sm:inline">Trang cá nhân</span>
+                {adminToken && (
+                  <Link
+                    to="/admin"
+                    className="hidden rounded-lg border border-red-500/40 bg-red-500/20 px-3 py-2 text-xs font-bold uppercase tracking-wide text-red-200 hover:bg-red-500/30 sm:inline-block"
+                  >
+                    Admin
+                  </Link>
+                )}
+                <Link to="/profile" className="flex items-center gap-2 text-zinc-300 transition-colors hover:text-white">
+                  <UserCircleIcon className="h-6 w-6" />
+                  <span className="hidden sm:inline">Tài khoản</span>
                 </Link>
-                <button onClick={handleLogout} className="flex items-center gap-2 text-rose-500 hover:text-rose-400 transition-colors ml-4">
-                  <ArrowRightOnRectangleIcon className="w-6 h-6" />
+                <button
+                  onClick={handleLogout}
+                  className="ml-1 flex items-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-zinc-200 transition hover:border-red-500/50 hover:text-red-300"
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
                   <span className="hidden sm:inline">Đăng xuất</span>
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
-                  <UserCircleIcon className="w-6 h-6" />
+                <Link to="/login" className="flex items-center gap-2 text-zinc-300 transition-colors hover:text-white">
+                  <UserCircleIcon className="h-6 w-6" />
                   <span className="hidden sm:inline">Đăng nhập</span>
                 </Link>
-                <Link to="/register" className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-full font-medium transition-colors shadow-lg shadow-rose-500/20 hover:shadow-rose-500/40">
+                <Link to="/register" className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white transition hover:bg-red-700">
                   Đăng ký
                 </Link>
               </>

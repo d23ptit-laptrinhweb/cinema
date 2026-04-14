@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client/dist/sockjs';
 import axiosClient from '../api/axiosClient';
 import { format, parseISO } from 'date-fns';
-import { InformationCircleIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 
 export default function BookingSeat() {
   const { showtimeId } = useParams();
@@ -12,21 +14,22 @@ export default function BookingSeat() {
   const [film, setFilm] = useState(null);
   const [room, setRoom] = useState(null);
   const [seats, setSeats] = useState([]);
+  const [holdingSeatIds, setHoldingSeatIds] = useState([]);
   const [bookedSeatIds, setBookedSeatIds] = useState([]);
   const [prices, setPrices] = useState({});
   const [selectedSeats, setSelectedSeats] = useState([]);
   
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const wsClientRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch showtime details
         const stRes = await axiosClient.get(`/showtime/${showtimeId}`);
         setShowtime(stRes);
 
         if (stRes) {
-          // 2. Fetch related data in parallel
           const [filmRes, roomRes, seatRes, ticketRes, priceRes] = await Promise.all([
             axiosClient.get(`/film/${stRes.filmId}`),
             axiosClient.get(`/room/${stRes.roomId}`).catch(() => null),
@@ -38,8 +41,15 @@ export default function BookingSeat() {
           setFilm(filmRes);
           setRoom(roomRes);
           setSeats(seatRes || []);
-          
-          const bookedIds = (ticketRes || []).filter(t => t.ticketStatus === 'BOOKED' || t.ticketStatus === 'PAID').map(t => t.seatId);
+
+          const holdingIds = (ticketRes || [])
+            .filter((t) => (t.displayStatus || t.ticketStatus) === 'HOLDING')
+            .map((t) => t.seatId);
+          const bookedIds = (ticketRes || [])
+            .filter((t) => (t.displayStatus || t.ticketStatus) === 'BOOKED')
+            .map((t) => t.seatId);
+
+          setHoldingSeatIds(holdingIds);
           setBookedSeatIds(bookedIds);
 
           const priceMap = {};
@@ -49,7 +59,7 @@ export default function BookingSeat() {
           setPrices(priceMap);
         }
       } catch (error) {
-        console.error('Failed to load booking details', error);
+        setError(error?.message || 'Không thể tải sơ đồ ghế.');
       } finally {
         setLoading(false);
       }
@@ -57,8 +67,73 @@ export default function BookingSeat() {
     fetchData();
   }, [showtimeId]);
 
+  useEffect(() => {
+    const socketUrl = `${window.location.origin}/api/ws`;
+    console.log('WebSocket connecting to:', socketUrl);
+    
+    const client = new Client({
+      webSocketFactory: () => new SockJS(socketUrl),
+      reconnectDelay: 5000,
+      onStompError: (frame) => {
+        console.error('WebSocket STOMP error:', frame);
+      },
+    });
+
+    client.onConnect = () => {
+      console.log('WebSocket connected, subscribing to:', `/topic/showtime/${showtimeId}/seats`);
+      client.subscribe(`/topic/showtime/${showtimeId}/seats`, (message) => {
+        console.log('WebSocket message received:', message.body);
+        try {
+          const payload = JSON.parse(message.body || '{}');
+          const seatId = payload.seatId;
+          const status = payload.status;
+
+          console.log('Parsed payload:', { seatId, status });
+
+          if (!seatId || !status) {
+            console.warn('Invalid payload:', { seatId, status });
+            return;
+          }
+
+          if (status === 'HOLDING') {
+            console.log('Setting seat HOLDING:', seatId);
+            setHoldingSeatIds((prev) => (prev.includes(seatId) ? prev : [...prev, seatId]));
+            setSelectedSeats((prev) => prev.filter((seat) => seat.seatId !== seatId));
+          } else if (status === 'BOOKED') {
+            console.log('Setting seat BOOKED:', seatId);
+            setHoldingSeatIds((prev) => prev.filter((id) => id !== seatId));
+            setBookedSeatIds((prev) => (prev.includes(seatId) ? prev : [...prev, seatId]));
+            setSelectedSeats((prev) => prev.filter((seat) => seat.seatId !== seatId));
+          } else if (status === 'AVAILABLE') {
+            console.log('Setting seat AVAILABLE:', seatId);
+            setHoldingSeatIds((prev) => prev.filter((id) => id !== seatId));
+            setBookedSeatIds((prev) => prev.filter((id) => id !== seatId));
+          }
+        } catch (err) {
+          console.error('Error parsing message:', err, message.body);
+        }
+      });
+    };
+
+    client.onDisconnect = () => {
+      console.log('WebSocket disconnected');
+    };
+
+    client.activate();
+    wsClientRef.current = client;
+
+    return () => {
+      if (wsClientRef.current) {
+        console.log('Cleaning up WebSocket');
+        wsClientRef.current.deactivate();
+        wsClientRef.current = null;
+      }
+    };
+  }, [showtimeId]);
+
   const toggleSeat = (seat) => {
-    if (bookedSeatIds.includes(seat.seatId) || !seat.isActive) return;
+    const isUnavailable = holdingSeatIds.includes(seat.seatId) || bookedSeatIds.includes(seat.seatId) || !seat.isActive;
+    if (isUnavailable) return;
 
     setSelectedSeats(prev => {
       const isSelected = prev.some(s => s.seatId === seat.seatId);
@@ -82,7 +157,6 @@ export default function BookingSeat() {
 
   const handleCheckout = () => {
     if (selectedSeats.length === 0) return;
-    // We could use Zustand here, but passing via navigate state is also okay for simplicity
     navigate('/checkout', {
       state: {
         showtime,
@@ -97,66 +171,73 @@ export default function BookingSeat() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+      <div className="page-shell flex min-h-[50vh] items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div>
       </div>
     );
   }
 
   if (!showtime) {
-    return <div className="text-center text-white py-20">Không tìm thấy thông tin suất chiếu</div>;
+    return (
+      <div className="page-shell py-20">
+        <div className="card-soft p-10 text-center text-zinc-600">Không tìm thấy thông tin suất chiếu</div>
+      </div>
+    );
   }
 
-  // Group seats by row
   const rows = {};
   seats.forEach(seat => {
     const row = seat.rowLabel;
     if (!rows[row]) rows[row] = [];
     rows[row].push(seat);
   });
-  // Sort rows alphabetically
   const sortedRows = Object.keys(rows).sort();
-  // Sort seats within row by seatNumber
   sortedRows.forEach(row => {
     rows[row].sort((a, b) => a.seatNumber - b.seatNumber);
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
-      {/* Left: Seat Map */}
-      <div className="flex-1 bg-slate-900 rounded-3xl p-6 border border-slate-700 shadow-2xl">
-        <div className="text-center mb-12">
-          <div className="w-full max-w-xl mx-auto h-12 bg-gradient-to-b from-white/20 to-transparent rounded-t-[50%] border-t-4 border-rose-500/50 relative shadow-[0_15px_30px_-5px_rgba(244,63,94,0.3)]">
-            <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-slate-400 font-bold tracking-widest uppercase text-sm">
-              Màn Hình
+    <div className="page-shell grid gap-7 py-6 lg:grid-cols-[1fr_370px]">
+      <section className="card-soft p-6 md:p-8">
+        <div className="mb-8 text-center">
+          <div className="mx-auto h-12 w-full max-w-xl rounded-t-[50%] border-t-4 border-red-500/60 bg-gradient-to-b from-red-100 to-transparent">
+            <span className="relative top-5 text-xs font-bold uppercase tracking-[0.2em] text-zinc-600">
+              Màn hình
             </span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 items-center overflow-x-auto pb-8 hide-scrollbar">
+        <div className="hide-scrollbar flex flex-col items-center gap-3 overflow-x-auto pb-6">
           {sortedRows.map(row => (
             <div key={row} className="flex items-center gap-3">
-              <div className="w-6 text-center text-slate-500 font-bold">{row}</div>
+              <div className="w-6 text-center text-sm font-bold text-zinc-500">{row}</div>
               <div className="flex gap-2">
                 {rows[row].map(seat => {
-                  const isBooked = bookedSeatIds.includes(seat.seatId) || !seat.isActive;
+                  const isHolding = holdingSeatIds.includes(seat.seatId);
+                  const isBooked = bookedSeatIds.includes(seat.seatId);
+                  const isInactive = !seat.isActive;
+                  const isBlocked = isHolding || isBooked || isInactive;
                   const isSelected = selectedSeats.some(s => s.seatId === seat.seatId);
                   const isVip = seat.seatType === 'VIP';
                   const isCouple = seat.seatType === 'COUPLE';
 
-                  let seatClass = "w-8 h-8 md:w-10 md:h-10 rounded-t-lg rounded-b-sm flex items-center justify-center text-xs font-medium cursor-pointer transition-all disabled:cursor-not-allowed";
+                  let seatClass = 'flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition md:h-10 md:w-10';
                   
                   if (isBooked) {
-                    seatClass += " bg-slate-700 text-slate-500 opacity-50 cursor-not-allowed";
+                    seatClass += ' cursor-not-allowed border border-zinc-300 bg-zinc-200 text-zinc-500';
+                  } else if (isHolding) {
+                    seatClass += ' cursor-not-allowed border border-orange-300 bg-orange-100 text-orange-700';
+                  } else if (isInactive) {
+                    seatClass += ' cursor-not-allowed border border-zinc-300 bg-zinc-200 text-zinc-500';
                   } else if (isSelected) {
-                    seatClass += " bg-rose-500 text-white shadow-lg shadow-rose-500/40 ring-2 ring-rose-300";
+                    seatClass += ' border border-red-700 bg-red-600 text-white';
                   } else {
                     if (isVip) {
-                      seatClass += " bg-amber-500/20 text-amber-500 border border-amber-500/30 hover:bg-amber-500/40";
+                      seatClass += ' border border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100';
                     } else if (isCouple) {
-                      seatClass += " bg-pink-500/20 text-pink-500 border border-pink-500/30 hover:bg-pink-500/40 w-[72px] md:w-[88px]"; // Wider for couple
+                      seatClass += ' w-[72px] border border-fuchsia-300 bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100 md:w-[88px]';
                     } else {
-                      seatClass += " bg-slate-800 text-slate-300 border border-slate-600 hover:border-slate-400 hover:bg-slate-700"; // Normal
+                      seatClass += ' border border-zinc-300 bg-white text-zinc-700 hover:border-red-400 hover:bg-red-50';
                     }
                   }
 
@@ -164,7 +245,7 @@ export default function BookingSeat() {
                     <button
                       key={seat.seatId}
                       onClick={() => toggleSeat(seat)}
-                      disabled={isBooked}
+                      disabled={isBlocked}
                       className={seatClass}
                     >
                       {seat.seatNumber}
@@ -172,43 +253,59 @@ export default function BookingSeat() {
                   );
                 })}
               </div>
-              <div className="w-6 text-center text-slate-500 font-bold">{row}</div>
+              <div className="w-6 text-center text-sm font-bold text-zinc-500">{row}</div>
             </div>
           ))}
         </div>
 
-        {/* Legend */}
-        <div className="mt-8 pt-8 border-t border-slate-700 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-slate-400">
+        <div className="mt-4 grid grid-cols-2 gap-4 border-t border-zinc-200 pt-6 text-sm text-zinc-600 sm:grid-cols-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-slate-800 border border-slate-600"></div>
-            <span>Ghế Thường</span>
+            <div className="h-5 w-5 rounded border border-zinc-300 bg-white"></div>
+            <span>Thường</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-amber-500/20 border border-amber-500/30"></div>
-            <span>Ghế VIP</span>
+            <div className="h-5 w-5 rounded border border-amber-400 bg-amber-50"></div>
+            <span>VIP</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-rose-500"></div>
-            <span className="text-white">Đang Chọn</span>
+            <div className="h-5 w-8 rounded border border-fuchsia-300 bg-fuchsia-50"></div>
+            <span>Couple</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-slate-700 opacity-50"></div>
-            <span>Đã Bán</span>
+            <div className="h-5 w-5 rounded border border-red-700 bg-red-600"></div>
+            <span>Đang chọn</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-5 rounded border border-orange-300 bg-orange-100"></div>
+            <span>Đang giữ chỗ</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-5 rounded border border-zinc-300 bg-zinc-200"></div>
+            <span>Đã đặt</span>
           </div>
         </div>
-      </div>
+        <p className="mt-3 text-xs text-zinc-500">
+          Ghế couple là ghế đôi dành cho 2 người, hiển thị dạng ô dài trên sơ đồ ghế.
+        </p>
+        <p className="mt-1 text-xs text-zinc-500">
+          Ghế màu cam là ghế đang được người khác giữ tạm thời trong quá trình thanh toán.
+        </p>
+        {error && (
+          <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        )}
+      </section>
 
-      {/* Right: Booking Summary */}
-      <div className="lg:w-96">
-        <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 sticky top-24 shadow-xl">
+      <aside className="card-soft h-fit p-6 lg:sticky lg:top-24">
           {film && (
-            <div className="flex gap-4 mb-6 pb-6 border-b border-slate-700">
-              <img src={film.thumnbnail_url} alt="Thumbnail" className="w-20 rounded-md shadow outline outline-1 outline-white/10" />
+            <div className="mb-5 flex gap-4 border-b border-zinc-200 pb-5">
+              <img src={film.thumnbnail_url} alt="Thumbnail" className="w-20 rounded-md border border-zinc-200" />
               <div>
-                <h3 className="font-bold text-white text-lg leading-tight">{film.filmName}</h3>
-                <p className="text-xs text-slate-400 mt-1">{film.durationMinutes} phút</p>
+                <h3 className="text-lg font-black leading-tight text-zinc-900">{film.filmName}</h3>
+                <p className="mt-1 text-xs text-zinc-500">{film.durationMinutes} phút</p>
                 {film.ageRating && (
-                  <span className="inline-block mt-2 px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 text-xs font-bold border border-orange-500/30">
+                  <span className="mt-2 inline-block rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700">
                     {film.ageRating}
                   </span>
                 )}
@@ -216,25 +313,25 @@ export default function BookingSeat() {
             </div>
           )}
 
-          <div className="space-y-4 text-sm mb-6">
+          <div className="mb-6 space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-slate-400">Rạp chiếu</span>
-              <span className="text-white font-medium text-right">{room?.name || 'Đang chờ cập nhật'}</span>
+              <span className="text-zinc-500">Phòng</span>
+              <span className="text-right font-semibold text-zinc-900">{room?.name || 'Đang cập nhật'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Suất chiếu</span>
-              <span className="text-white font-medium">
+              <span className="text-zinc-500">Suất chiếu</span>
+              <span className="font-semibold text-zinc-900">
                 {showtime?.startTime ? format(parseISO(showtime.startTime), 'HH:mm - dd/MM/yyyy') : ''}
               </span>
             </div>
             <div className="flex justify-between items-start">
-              <span className="text-slate-400">Ghế chọn</span>
+              <span className="text-zinc-500">Ghế chọn</span>
               <div className="flex gap-1 flex-wrap justify-end max-w-[60%]">
                 {selectedSeats.length === 0 ? (
-                  <span className="text-slate-500">Chưa chọn ghế</span>
+                  <span className="text-zinc-500">Chưa chọn ghế</span>
                 ) : (
                   selectedSeats.map(s => (
-                    <span key={s.seatId} className="px-2 py-1 bg-rose-500/20 text-rose-400 rounded block font-medium">
+                    <span key={s.seatId} className="block rounded bg-red-50 px-2 py-1 font-semibold text-red-700">
                       {s.seatCode}
                     </span>
                   ))
@@ -243,10 +340,10 @@ export default function BookingSeat() {
             </div>
           </div>
 
-          <div className="border-t border-slate-700 pt-6 mb-6">
+          <div className="mb-6 border-t border-zinc-200 pt-5">
             <div className="flex justify-between items-end">
-              <span className="text-slate-400">Tổng tiền</span>
-              <span className="text-3xl font-bold text-rose-500">
+              <span className="text-zinc-500">Tổng tiền</span>
+              <span className="text-3xl font-black text-red-700">
                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(calculateTotal())}
               </span>
             </div>
@@ -255,13 +352,12 @@ export default function BookingSeat() {
           <button
             onClick={handleCheckout}
             disabled={selectedSeats.length === 0}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 text-white py-4 rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className="btn-primary w-full"
           >
-            <ShoppingCartIcon className="w-5 h-5" />
+            <ShoppingCartIcon className="h-5 w-5" />
             Tiếp tục thanh toán
           </button>
-        </div>
-      </div>
+      </aside>
     </div>
   );
 }

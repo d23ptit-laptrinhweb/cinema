@@ -79,7 +79,7 @@ public class VnpayService {
 
         ZonedDateTime now = ZonedDateTime.now(VN_ZONE);
         params.put("vnp_CreateDate", now.format(VNPAY_TIME_FORMATTER));
-        params.put("vnp_ExpireDate", now.plusMinutes(30).format(VNPAY_TIME_FORMATTER));
+        params.put("vnp_ExpireDate", now.plusMinutes(10).format(VNPAY_TIME_FORMATTER));
 
         List<String> fieldNames = new ArrayList<>(params.keySet());
         Collections.sort(fieldNames);
@@ -285,6 +285,17 @@ public class VnpayService {
             if (paymentSuccess) {
                 booking.setStatus(BookingStatus.COMPLETED);
 
+                // Xoá Redis keys khi thanh toán thành công
+                try {
+                    List<String> keysToDelete = booking.getTickets().stream()
+                            .map(ticket -> "seat_hold:" + booking.getShowtime().getId() + ":" + ticket.getSeat().getId())
+                            .toList();
+                    redisTemplate.delete(keysToDelete);
+                    log.info("Xoá {} Redis keys khi thanh toán thành công", keysToDelete.size());
+                } catch (Exception ex) {
+                    log.error("Lỗi khi xoá Redis keys: {}", ex.getMessage());
+                }
+
                 booking.getTickets().forEach(ticket -> {
                     ticket.setTicketStatus(TicketStatus.BOOKED);
                     ticketRepository.save(ticket);
@@ -297,7 +308,18 @@ public class VnpayService {
                     );
                 });
             } else {
-                booking.setStatus(BookingStatus.CANCELLED);
+                booking.setStatus(BookingStatus.EXPIRED);
+
+                // Xoá Redis keys hold vé khi thanh toán thất bại
+                try {
+                    List<String> keysToDelete = booking.getTickets().stream()
+                            .map(ticket -> "seat_hold:" + booking.getShowtime().getId() + ":" + ticket.getSeat().getId())
+                            .toList();
+                    redisTemplate.delete(keysToDelete);
+                    log.info("Xoá {} Redis keys khi thanh toán thất bại", keysToDelete.size());
+                } catch (Exception ex) {
+                    log.error("Lỗi khi xoá Redis keys: {}", ex.getMessage());
+                }
 
                 booking.getTickets().forEach(ticket -> {
                     ticket.setBooking(null);
@@ -314,19 +336,10 @@ public class VnpayService {
             }
 
             bookingRepository.save(booking);
-
-            try {
-                List<String> keys = booking.getTickets().stream()
-                        .map(ticket -> "seat_hold:" + booking.getShowtime().getId() + ":" + ticket.getSeat().getId())
-                        .toList();
-                redisTemplate.delete(keys);
-                return rsp("00", "Confirm Success");
-            } catch (Exception ex) {
-                log.error("Xoá key thất bai: {}", ex.getMessage());
-            }
+            return rsp("00", "Confirm Success");
 
         } catch (Exception e) {
-            return rsp("99", "Unknown error");
+            log.error("Error processing IPN: {}", e.getMessage(), e);
         }
         return params;
     }
