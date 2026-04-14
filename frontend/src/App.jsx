@@ -36,6 +36,7 @@ function App() {
           <Route path="booking/seat/:showtimeId" element={<BookingSeat />} />
           <Route path="booking/history/:id" element={<BookingDetail />} />
           <Route path="checkout" element={<Checkout />} />
+          <Route path="payment-return" element={<PaymentReturn />} />
           <Route path="v1/vnpay/return" element={<PaymentReturn />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />

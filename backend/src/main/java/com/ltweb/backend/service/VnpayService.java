@@ -308,7 +308,7 @@ public class VnpayService {
                     );
                 });
             } else {
-                booking.setStatus(BookingStatus.EXPIRED);
+                booking.setStatus(BookingStatus.CANCELLED);
 
                 // Xoá Redis keys hold vé khi thanh toán thất bại
                 try {

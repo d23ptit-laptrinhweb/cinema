@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ltweb.backend.dto.request.CreateUserRequest;
+import com.ltweb.backend.dto.request.UpdateMyInfoRequest;
 import com.ltweb.backend.dto.request.UpdateUserRequest;
 import com.ltweb.backend.dto.response.ApiResponse;
 import com.ltweb.backend.dto.response.PageResponse;
@@ -85,10 +86,10 @@ public class UserController {
     }
 
     @PutMapping("/my-info")
-    public ApiResponse<UserResponse> updateMyInfo(@RequestBody @Valid UpdateUserRequest updateUserRequest) {
+    public ApiResponse<UserResponse> updateMyInfo(@RequestBody @Valid UpdateMyInfoRequest updateMyInfoRequest) {
         ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Your information has been updated successfully!");
-        apiResponse.setResult(userService.updateMyInfo(updateUserRequest));
+        apiResponse.setResult(userService.updateMyInfo(updateMyInfoRequest));
         return apiResponse;
     }
 }

@@ -13,11 +13,17 @@ export default function PaymentReturn() {
     const verifyPayment = async () => {
       try {
         const queryString = searchParams.toString();
-        const response = await axiosClient.get(`/v1/vnpay/return?${queryString}`).catch(() => null);
-        const result = response || {};
+        const result = await axiosClient.get(`/v1/vnpay/return?${queryString}`).catch(() => null);
+        if (!result) {
+          setStatus('error');
+          setMessage('Không thể xác minh giao dịch thanh toán.');
+          return;
+        }
+
+        const validSignature = result.validSignature !== false;
         const txnStatus = result.vnp_TransactionStatus || searchParams.get('vnp_TransactionStatus');
         const responseCode = result.vnp_ResponseCode || searchParams.get('vnp_ResponseCode');
-        const success = txnStatus === '00' && responseCode === '00';
+        const success = validSignature && txnStatus === '00' && responseCode === '00';
 
         setMeta({
           txnRef: result.vnp_TxnRef || searchParams.get('vnp_TxnRef') || '',

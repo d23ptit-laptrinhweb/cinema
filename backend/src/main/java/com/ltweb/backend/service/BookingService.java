@@ -118,7 +118,6 @@ public class BookingService {
 
         selectedTickets.forEach(ticket -> {
             ticket.setBooking(booking);
-            ticket.setTicketStatus(TicketStatus.HOLDING);
         });
         ticketRepository.saveAll(selectedTickets);
         booking.setTickets(selectedTickets);
