@@ -39,6 +39,10 @@ public class TicketService {
     public void createTicket(Showtime showtime) {
         List<Seat> seats = seatRepository.findByRoomId(showtime.getRoom().getId());
 
+        if (seats.isEmpty()) {
+            throw new AppException(ErrorCode.ROOM_HAS_NO_SEATS);
+        }
+
         List<Ticket> tickets = seats.stream().map(seat -> {
             var seatTypePrice = seatTypePriceRepository.findBySeatType(seat.getSeatType())
                     .orElseThrow(() -> new AppException(ErrorCode.SEATTYPE_NOT_EXIST));

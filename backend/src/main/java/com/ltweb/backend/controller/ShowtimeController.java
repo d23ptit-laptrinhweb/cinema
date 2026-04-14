@@ -48,6 +48,13 @@ public class ShowtimeController {
         return apiResponse;
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<ShowtimeResponse> getById(@PathVariable String id) {
+        ApiResponse<ShowtimeResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(showtimeService.getById(id));
+        return apiResponse;
+    }
+
     @GetMapping("/filter")
     public ApiResponse<List<ShowtimeResponse>> getByFilmAndDateAndBranch(
         @RequestParam String filmId,

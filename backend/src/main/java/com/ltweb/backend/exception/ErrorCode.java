@@ -40,6 +40,7 @@ public enum ErrorCode {
 
     // Seat Management
     SEAT_NOT_FOUND(400, "Seat does not exist", HttpStatus.BAD_REQUEST),
+    ROOM_HAS_NO_SEATS(400, "Room has no seats. Please create seats before creating showtime", HttpStatus.BAD_REQUEST),
 
     // Film Management
     FILM_NOT_FOUND(400, "Film does not exist", HttpStatus.BAD_REQUEST),
