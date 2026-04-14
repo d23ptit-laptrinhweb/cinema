@@ -9,6 +9,7 @@ public class CreateVnpayRequest {
     private Long amount;
     private String bankCode;
     private String language;
+    private String bookingId;
     private String orderId;
     private String orderInfo;
     private String orderType;
@@ -35,6 +36,14 @@ public class CreateVnpayRequest {
 
     public void setLanguage(String language) {
         this.language = language;
+    }
+
+    public String getBookingId() {
+        return bookingId;
+    }
+
+    public void setBookingId(String bookingId) {
+        this.bookingId = bookingId;
     }
 
     public String getOrderId() {

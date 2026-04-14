@@ -40,10 +40,26 @@
   font-weight: 700;
   padding: 6px 12px;
   border-radius: 6px;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.status-completed {
   background-color: #f0fff4;
   color: #166534;
-  border: 1px solid #bbf7d0;
-  text-transform: uppercase;
+  border-color: #bbf7d0;
+}
+
+.status-pending {
+  background-color: #fffbeb;
+  color: #92400e;
+  border-color: #fef3c7;
+}
+
+.status-cancelled {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #fee2e2;
 }
 
 .ticket-movie-title {

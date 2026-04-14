@@ -68,7 +68,7 @@ const FilmManagement = () => {
         releaseDate: film.releaseDate ? film.releaseDate.split('T')[0] : '',
         endDate: film.endDate ? film.endDate.split('T')[0] : '',
         status: film.status || 'UPCOMING',
-        genreIds: film.genres?.map(g => g.genreId) || []
+        genreIds: film.genres?.map(g => g.id) || []
       });
     } else {
       setEditingFilm(null);
@@ -285,7 +285,12 @@ const FilmManagement = () => {
       {/* Film Modal */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content admin-modal" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto', padding: '32px' }}>
+          <div className="modal-content admin-modal" onClick={e => e.stopPropagation()} style={{ 
+            maxWidth: '800px', 
+            maxHeight: '90vh', 
+            overflowY: 'auto', 
+            padding: '32px' 
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{editingFilm ? 'Chỉnh sửa phim' : 'Thêm phim mới'}</h2>
               <button onClick={handleCloseModal} className="modal-close" style={{ position: 'static', fontSize: '1.5rem' }}>✕</button>
@@ -384,11 +389,11 @@ const FilmManagement = () => {
                 <label className="form-label">Thể loại</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px', padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                   {genres.map(genre => (
-                    <label key={genre.genreId} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                    <label key={genre.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
                       <input 
                         type="checkbox" 
-                        checked={formData.genreIds.includes(genre.genreId)} 
-                        onChange={() => handleGenreToggle(genre.genreId)}
+                        checked={formData.genreIds.includes(genre.id)} 
+                        onChange={() => handleGenreToggle(genre.id)}
                         style={{ cursor: 'pointer' }}
                       />
                       {genre.name}

@@ -74,7 +74,11 @@ const ShowtimeManagement = () => {
 
   useEffect(() => {
     if (formData.branchId) {
-      setFilteredRooms(rooms.filter(r => r.branchId === formData.branchId));
+      // Dùng so sánh lỏng hoặc ép kiểu sang String để tránh lỗi type mismatch (String vs Number)
+      // Và kiểm tra cả camelCase/snake_case cho chắc chắn
+      setFilteredRooms(rooms.filter(r => 
+        String(r.branchId || r.branch_id) === String(formData.branchId)
+      ));
     } else {
       setFilteredRooms([]);
     }
@@ -86,7 +90,7 @@ const ShowtimeManagement = () => {
       setFormData({
         showtimeId: st.showtimeId,
         filmId: st.filmId,
-        branchId: st.branchId,
+        branchId: st.branchId || '', // Đã được bổ sung vào ShowtimeResponse
         roomId: st.roomId,
         startTime: st.startTime ? new Date(st.startTime).toISOString().slice(0, 16) : '',
         endTime: st.endTime ? new Date(st.endTime).toISOString().slice(0, 16) : '',
@@ -132,7 +136,7 @@ const ShowtimeManagement = () => {
       toast.success('Xóa thành công!');
       fetchData();
     } catch (err) {
-      toast.error('Xóa thất bại');
+      toast.error(err.response?.data?.message || 'Xóa thất bại');
     }
   };
 
@@ -251,9 +255,18 @@ const ShowtimeManagement = () => {
       {/* MODAL */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '500px', height: 'auto', background: 'var(--bg-card)', padding: '32px', borderRadius: 'var(--radius-lg)' }}>
-            <h2 style={{ marginBottom: '24px' }}>{isEditing ? 'Sửa suất chiếu' : 'Thêm suất chiếu mới'}</h2>
-            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="modal-content" style={{ 
+            maxWidth: '650px', 
+            height: 'auto', 
+            aspectRatio: 'unset', 
+            overflowY: 'auto', 
+            maxHeight: '90vh',
+            background: 'var(--bg-card)', 
+            padding: '28px 32px', 
+            borderRadius: 'var(--radius-lg)' 
+          }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '1.4rem', fontWeight: 700 }}>{isEditing ? 'Chỉnh sửa suất chiếu' : 'Thêm suất chiếu mới'}</h2>
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div className="form-group">
                 <label className="form-label">Chọn phim</label>
                 <select 

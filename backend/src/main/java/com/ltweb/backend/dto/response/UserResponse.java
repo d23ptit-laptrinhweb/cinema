@@ -5,6 +5,7 @@ import java.time.LocalDate;
 
 import com.ltweb.backend.enums.UserRole;
 
+import com.ltweb.backend.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,4 +26,6 @@ public class UserResponse {
     private UserRole role;
     private LocalDate dob;
     private String gender;
+    private UserStatus status;
+    private java.time.LocalDateTime createdAt;
 }

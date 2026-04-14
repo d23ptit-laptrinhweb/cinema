@@ -12,16 +12,12 @@ public interface ShowtimeMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "room", ignore = true)
     @Mapping(target = "film", ignore = true)
-    @Mapping(target = "tickets", ignore = true)
-    @Mapping(target = "bookings", ignore = true)
     Showtime toShowtime(CreateShowtimeRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "room", ignore = true)
     @Mapping(target = "film", ignore = true)
-    @Mapping(target = "tickets", ignore = true)
-    @Mapping(target = "bookings", ignore = true)
     void updateShowtime(@MappingTarget Showtime showtime, UpdateShowtimeRequest request);
 
     @Mapping(source = "id", target = "showtimeId")
@@ -29,6 +25,7 @@ public interface ShowtimeMapper {
     @Mapping(source = "room.name", target = "roomName")
     @Mapping(expression = "java(showtime.getRoom() != null && showtime.getRoom().getRoomType() != null ? showtime.getRoom().getRoomType().name() : null)", target = "roomType")
     @Mapping(source = "room.branch.name", target = "branchName")
+    @Mapping(source = "room.branch.branchId", target = "branchId")
     @Mapping(source = "film.id", target = "filmId")
     @Mapping(source = "film.filmName", target = "filmName")
     ShowtimeResponse toResponse(Showtime showtime);

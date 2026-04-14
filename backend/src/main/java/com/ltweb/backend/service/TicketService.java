@@ -1,19 +1,21 @@
 package com.ltweb.backend.service;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import com.ltweb.backend.entity.*;
+import com.ltweb.backend.enums.SeatType;
 import com.ltweb.backend.enums.TicketStatus;
 
+import com.ltweb.backend.mapper.TicketMapper;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.UpdateTicketRequest;
 import com.ltweb.backend.dto.response.TicketResponse;
-import com.ltweb.backend.entity.Booking;
-import com.ltweb.backend.entity.Seat;
-import com.ltweb.backend.entity.Showtime;
-import com.ltweb.backend.entity.Ticket;
 import com.ltweb.backend.exception.AppException;
 import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.repository.BookingRepository;
@@ -23,6 +25,7 @@ import com.ltweb.backend.repository.ShowtimeRepository;
 import com.ltweb.backend.repository.TicketRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -34,29 +37,35 @@ public class TicketService {
     private final SeatRepository seatRepository;
     private final SeatTypePriceRepository seatTypePriceRepository;
     private final StringRedisTemplate redisTemplate;
+    private final TicketMapper ticketMapper;
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public void createTicket(Showtime showtime) {
         List<Seat> seats = seatRepository.findByRoomId(showtime.getRoom().getId());
 
-        List<Ticket> tickets = seats.stream().map(seat -> {
-            var seatTypePrice = seatTypePriceRepository.findBySeatType(seat.getSeatType())
-                    .orElseThrow(() -> new AppException(ErrorCode.SEATTYPE_NOT_EXIST));
-            return Ticket.builder()
-                    .showtime(showtime)
-                    .seat(seat)
-                    .price(seatTypePrice.getPrice())
-                    .ticketStatus(TicketStatus.AVAILABLE)
-                    .build();
-        }).toList();
+        // lấy sẵn seatTypePrice ra thay vì mỗi lần lại phải chọc vào db để lấy, tránh N + 1
+        Map<SeatType, BigDecimal> pricesMap = seatTypePriceRepository.findAll().stream().collect(
+                Collectors.toMap(
+                        SeatTypePrice::getSeatType,
+                        SeatTypePrice::getPrice
+                )
+        );
+
+        List<Ticket> tickets = seats.stream().map(seat -> Ticket.builder()
+                .price(pricesMap.get(seat.getSeatType()))
+                .ticketStatus(TicketStatus.AVAILABLE)
+                .showtime(showtime)
+                .seat(seat)
+                .build()).toList();
 
         ticketRepository.saveAll(tickets);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
     public List<TicketResponse> getAllTickets() {
         return ticketRepository.findAll().stream()
-                .map(this::toTicketResponse)
+                .map(ticketMapper::toTicketResponse)
                 .toList();
     }
 
@@ -67,7 +76,7 @@ public class TicketService {
         List<Ticket> dbTickets = ticketRepository.findByShowtimeId(showtimeId);
 
         List<TicketResponse> tickets = dbTickets.stream()
-                .map(this::toTicketResponse)
+                .map(ticketMapper::toTicketResponse)
                 .toList();
 
         // Bước 2: Tạo danh sách key Redis tương ứng với từng ghế
@@ -75,7 +84,7 @@ public class TicketService {
                 .map(ticket -> "seat_hold:" + showtimeId + ":" + ticket.getSeatId())
                 .toList();
 
-        // Bước 3: Batch query Redis — 1 round-trip duy nhất
+        // Bước 3: Batch query Redis — 1 lần lấy tất cả
         List<String> redisHoldStatus = redisTemplate.opsForValue().multiGet(seatKeys);
 
         // Bước 4: Merge trạng thái DB với Redis để tạo displayStatus
@@ -96,7 +105,7 @@ public class TicketService {
                 // Ghế đang bị lock tạm thời trong Redis (user đang ở bước thanh toán)
                 ticket.setDisplayStatus(TicketStatus.HOLDING);
             } else {
-                // Không có trong Redis -> lấy trực tiếp từ DB (AVAILABLE hoặc HOLDING cũ)
+                // Không có trong Redis -> lấy trực tiếp từ DB
                 ticket.setDisplayStatus(ticket.getTicketStatus());
             }
         }
@@ -105,14 +114,14 @@ public class TicketService {
     }
 
     public TicketResponse getTicketById(String ticketId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));
-        return toTicketResponse(ticket);
+        Ticket ticket = getTicket(ticketId);
+        return ticketMapper.toTicketResponse(ticket);
     }
 
     public TicketResponse updateTicket(String ticketId, UpdateTicketRequest request) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));
+        Ticket ticket = getTicket(ticketId);
+
+        ticketMapper.updateTicket(ticket, request);
 
         if (request.getBookingId() != null && !request.getBookingId().isBlank()) {
             Booking booking = bookingRepository.findById(request.getBookingId())
@@ -132,36 +141,22 @@ public class TicketService {
             ticket.setSeat(seat);
         }
 
-        if (request.getTicketStatus() != null) {
-            ticket.setTicketStatus(request.getTicketStatus());
-        }
-
-        if (request.getQrCode() != null) {
-            ticket.setQrCode(request.getQrCode());
-        }
-
-        return toTicketResponse(ticket);
+        return ticketMapper.toTicketResponse(ticketRepository.save(ticket));
     }
 
     public void deleteTicket(String ticketId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));
+        Ticket ticket = getTicket(ticketId);
         ticketRepository.delete(ticket);
     }
 
-    private TicketResponse toTicketResponse(Ticket ticket) {
-        return TicketResponse.builder()
-                .ticketId(ticket.getId())
-                .bookingId(ticket.getBooking() != null ? ticket.getBooking().getId() : null)
-                .showtimeId(ticket.getShowtime() != null ? ticket.getShowtime().getId() : null)
-                .seatId(ticket.getSeat() != null ? ticket.getSeat().getId() : null)
-                .seatCode(ticket.getSeat() != null ? ticket.getSeat().getSeatCode() : null)
-                .rowLabel(ticket.getSeat() != null ? ticket.getSeat().getRowLabel() : null)
-                .seatNumber(ticket.getSeat() != null ? ticket.getSeat().getSeatNumber() : null)
-                .price(ticket.getPrice())
-                .ticketStatus(ticket.getTicketStatus())
-                .displayStatus(ticket.getTicketStatus()) // mặc định bằng DB, sẽ được override sau
-                .qrCode(ticket.getQrCode())
-                .build();
+    @Transactional
+    public void deleteByShowtimeId(String showtimeId) {
+        ticketRepository.deleteByShowtimeId(showtimeId);
+    }
+
+    // ===== PRIVATE HELPER =====
+    private Ticket getTicket(String ticketId) {
+        return ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));
     }
 }

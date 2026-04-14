@@ -1,6 +1,5 @@
 package com.ltweb.backend.service;
 
-
 import com.ltweb.backend.dto.response.SeatStatusEvent;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,7 @@ import com.ltweb.backend.enums.TicketStatus;
 import com.ltweb.backend.repository.BookingRepository;
 import com.ltweb.backend.repository.TicketRepository;
 import com.ltweb.backend.util.VnpayUtil;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -54,7 +53,11 @@ public class VnpayService {
         String vnpVersion = "2.1.0";
         String vnpCommand = "pay";
         String orderType = (req.getOrderType() == null || req.getOrderType().isBlank()) ? "other" : req.getOrderType();
-        String txnRef = (req.getOrderId() == null || req.getOrderId().isBlank()) ? VnpayUtil.randomNumeric(8) : req.getOrderId();
+        String txnRef = req.getBookingId();
+        if (txnRef == null || txnRef.isBlank()) {
+            txnRef = (req.getOrderId() == null || req.getOrderId().isBlank()) ? VnpayUtil.randomNumeric(8)
+                    : req.getOrderId();
+        }
         String ipAddr = VnpayUtil.getClientIp(request);
 
         Map<String, String> params = new HashMap<>();
@@ -79,7 +82,7 @@ public class VnpayService {
 
         ZonedDateTime now = ZonedDateTime.now(VN_ZONE);
         params.put("vnp_CreateDate", now.format(VNPAY_TIME_FORMATTER));
-        params.put("vnp_ExpireDate", now.plusMinutes(30).format(VNPAY_TIME_FORMATTER));
+        params.put("vnp_ExpireDate", now.plusMinutes(6).format(VNPAY_TIME_FORMATTER));
 
         List<String> fieldNames = new ArrayList<>(params.keySet());
         Collections.sort(fieldNames);
@@ -189,7 +192,6 @@ public class VnpayService {
             }
         }
 
-        
         String hashData = VnpayUtil.buildReturnHashData(filtered);
         String calculatedHash = VnpayUtil.hmacSHA512(props.getSecretKey(), hashData);
         boolean valid = calculatedHash.equalsIgnoreCase(secureHash);
@@ -207,6 +209,7 @@ public class VnpayService {
         return result;
     }
 
+    @Transactional
     public ApiResponse<Map<String, Object>> processReturnUrl(Map<String, String> params) {
         Map<String, Object> verify = verifyCallback(params);
         boolean validSignature = Boolean.TRUE.equals(verify.get("validSignature"));
@@ -223,9 +226,74 @@ public class VnpayService {
         String transactionStatus = String.valueOf(verify.getOrDefault("vnp_TransactionStatus", ""));
 
         verify.put("vnp_ResponseCodeDesc", RESPONSE_CODE_DESC.getOrDefault(responseCode, "Loi khac"));
-        verify.put("vnp_TransactionStatusDesc", TRANSACTION_STATUS_DESC.getOrDefault(transactionStatus, "Khong xac dinh"));
+        verify.put("vnp_TransactionStatusDesc",
+                TRANSACTION_STATUS_DESC.getOrDefault(transactionStatus, "Khong xac dinh"));
 
         boolean success = "00".equals(responseCode) && "00".equals(transactionStatus);
+
+        // Cập nhật DB ngay tại đây (idempotent - an toàn khi IPN cũng gọi ở Production)
+        String txnRef = params.get("vnp_TxnRef");
+        if (txnRef != null && !txnRef.isBlank()) {
+            // Thử tìm theo ID (UUID) trước, sau đó mới tìm theo bookingCode
+            Optional<Booking> bookingOpt = bookingRepository.findById(txnRef);
+            if (bookingOpt.isEmpty()) {
+                bookingOpt = bookingRepository.findByBookingCode(txnRef);
+            }
+
+            bookingOpt.ifPresent(booking -> {
+                // Idempotency: chỉ xử lý nếu booking chưa được cập nhật
+                if (booking.getStatus() != BookingStatus.COMPLETED
+                        && booking.getStatus() != BookingStatus.CANCELLED) {
+                    booking.setPaymentMethod(PaymentMethod.VNPAY);
+                    booking.setProviderTxnId(params.get("vnp_TransactionNo"));
+
+                    if (success) {
+                        booking.setStatus(BookingStatus.COMPLETED);
+                        booking.setPaymentStatus(PaymentStatus.PAID);
+                        booking.setPaidAt(LocalDateTime.now());
+
+                        booking.getTickets().forEach(ticket -> {
+                            ticket.setTicketStatus(TicketStatus.BOOKED);
+                            ticketRepository.save(ticket);
+                            simpMessagingTemplate.convertAndSend(
+                                    "/topic/showtime/" + ticket.getShowtime().getId() + "/seats",
+                                    SeatStatusEvent.builder()
+                                            .seatId(ticket.getSeat().getId())
+                                            .status("BOOKED")
+                                            .build());
+                        });
+                    } else {
+                        booking.setStatus(BookingStatus.CANCELLED);
+                        booking.setPaymentStatus(PaymentStatus.CANCELLED);
+
+                        booking.getTickets().forEach(ticket -> {
+                            ticket.setBooking(null);
+                            ticket.setTicketStatus(TicketStatus.AVAILABLE);
+                            ticketRepository.save(ticket);
+                            simpMessagingTemplate.convertAndSend(
+                                    "/topic/showtime/" + ticket.getShowtime().getId() + "/seats",
+                                    SeatStatusEvent.builder()
+                                            .seatId(ticket.getSeat().getId())
+                                            .status("AVAILABLE")
+                                            .build());
+                        });
+                    }
+
+                    bookingRepository.save(booking);
+
+                    // Xóa Redis seat lock
+                    try {
+                        List<String> keys = booking.getTickets().stream()
+                                .map(t -> "seat_hold:" + booking.getShowtime().getId() + ":" + t.getSeat().getId())
+                                .toList();
+                        redisTemplate.delete(keys);
+                    } catch (Exception ex) {
+                        log.warn("Không thể xóa Redis seat lock: {}", ex.getMessage());
+                    }
+                }
+            });
+        }
+
         if (success) {
             return ApiResponse.<Map<String, Object>>builder()
                     .code(200)
@@ -255,7 +323,11 @@ public class VnpayService {
                 return rsp("01", "Order not Found");
             }
 
-            Optional<Booking> bookingOpt = bookingRepository.findByBookingCode(txnRef);
+            Optional<Booking> bookingOpt = bookingRepository.findById(txnRef);
+            if (bookingOpt.isEmpty()) {
+                bookingOpt = bookingRepository.findByBookingCode(txnRef);
+            }
+
             if (bookingOpt.isEmpty()) {
                 return rsp("01", "Order not Found");
             }
@@ -285,6 +357,18 @@ public class VnpayService {
             if (paymentSuccess) {
                 booking.setStatus(BookingStatus.COMPLETED);
 
+                // Xoá Redis keys khi thanh toán thành công
+                try {
+                    List<String> keysToDelete = booking.getTickets().stream()
+                            .map(ticket -> "seat_hold:" + booking.getShowtime().getId() + ":"
+                                    + ticket.getSeat().getId())
+                            .toList();
+                    redisTemplate.delete(keysToDelete);
+                    log.info("Xoá {} Redis keys khi thanh toán thành công", keysToDelete.size());
+                } catch (Exception ex) {
+                    log.error("Lỗi khi xoá Redis keys: {}", ex.getMessage());
+                }
+
                 booking.getTickets().forEach(ticket -> {
                     ticket.setTicketStatus(TicketStatus.BOOKED);
                     ticketRepository.save(ticket);
@@ -293,11 +377,22 @@ public class VnpayService {
                             SeatStatusEvent.builder()
                                     .seatId(ticket.getSeat().getId())
                                     .status("BOOKED")
-                                    .build()
-                    );
+                                    .build());
                 });
             } else {
                 booking.setStatus(BookingStatus.CANCELLED);
+
+                // Xoá Redis keys hold vé khi thanh toán thất bại
+                try {
+                    List<String> keysToDelete = booking.getTickets().stream()
+                            .map(ticket -> "seat_hold:" + booking.getShowtime().getId() + ":"
+                                    + ticket.getSeat().getId())
+                            .toList();
+                    redisTemplate.delete(keysToDelete);
+                    log.info("Xoá {} Redis keys khi thanh toán thất bại", keysToDelete.size());
+                } catch (Exception ex) {
+                    log.error("Lỗi khi xoá Redis keys: {}", ex.getMessage());
+                }
 
                 booking.getTickets().forEach(ticket -> {
                     ticket.setBooking(null);
@@ -308,25 +403,15 @@ public class VnpayService {
                             SeatStatusEvent.builder()
                                     .seatId(ticket.getSeat().getId())
                                     .status("AVAILABLE")
-                                    .build()
-                    );
+                                    .build());
                 });
             }
 
             bookingRepository.save(booking);
-
-            try {
-                List<String> keys = booking.getTickets().stream()
-                        .map(ticket -> "seat_hold:" + booking.getShowtime().getId() + ":" + ticket.getSeat().getId())
-                        .toList();
-                redisTemplate.delete(keys);
-                return rsp("00", "Confirm Success");
-            } catch (Exception ex) {
-                log.error("Xoá key thất bai: {}", ex.getMessage());
-            }
+            return rsp("00", "Confirm Success");
 
         } catch (Exception e) {
-            return rsp("99", "Unknown error");
+            log.error("Error processing IPN: {}", e.getMessage(), e);
         }
         return params;
     }

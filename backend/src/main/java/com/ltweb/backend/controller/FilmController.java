@@ -2,6 +2,7 @@ package com.ltweb.backend.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +28,7 @@ public class FilmController {
     private final FilmService filmService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<FilmResponse> createFilm(@RequestBody @Valid CreateFilmRequest createFilmRequest) {
         ApiResponse<FilmResponse> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Create film successfully!");
@@ -35,9 +37,9 @@ public class FilmController {
     }
 
     @GetMapping
-    public ApiResponse<List<FilmResponse>> getAllFilms() {
+    public ApiResponse<List<FilmResponse>> getAllFilms(@org.springframework.web.bind.annotation.RequestParam(required = false) String filmName) {
         ApiResponse<List<FilmResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(filmService.getAllFilms());
+        apiResponse.setResult(filmService.getAllFilms(filmName));
         return apiResponse;
     }
 
@@ -63,6 +65,7 @@ public class FilmController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<FilmResponse> updateFilm(
         @PathVariable("id") String id,
         @RequestBody @Valid UpdateFilmRequest updateFilmRequest
@@ -74,6 +77,7 @@ public class FilmController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> deleteFilm(@PathVariable("id") String id) {
         ApiResponse<String> apiResponse = new ApiResponse<>();
         filmService.deleteFilm(id);

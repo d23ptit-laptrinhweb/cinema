@@ -1,24 +1,60 @@
 import { useState, useEffect } from 'react';
 import { userApi } from '../../api';
+import { toast } from 'react-toastify';
+
+const LockIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const UnlockIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+  </svg>
+);
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const fetchUsers = async () => {
+    try {
+      const res = await userApi.getAll();
+      const result = res.data.result;
+      setUsers(result?.data || result || []);
+    } catch (err) {
+      console.error('Lỗi khi tải người dùng:', err);
+      toast.error('Lỗi khi tải danh sách người dùng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await userApi.getAll();
-        setUsers(res.data.result || []);
-      } catch (err) {
-        console.error('Lỗi khi tải người dùng:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
   }, []);
+
+  const handleToggleStatus = async (user) => {
+    const newStatus = user.status === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED';
+    const confirmMsg = user.status === 'BLOCKED' 
+      ? `Bạn có chắc chắn muốn mở khoá tài khoản ${user.username}?`
+      : `Bạn có chắc chắn muốn khoá tài khoản ${user.username}?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await userApi.updateStatus(user.id, newStatus);
+      toast.success(user.status === 'BLOCKED' ? 'Mở khoá thành công' : 'Khoá tài khoản thành công');
+      fetchUsers();
+    } catch (err) {
+      toast.error('Cập nhật trạng thái thất bại');
+      console.error(err);
+    }
+  };
 
   const filtered = users.filter((u) =>
     [u.username, u.fullName, u.email].some((f) =>
@@ -102,9 +138,9 @@ const UserManagement = () => {
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{user.email || '—'}</td>
                   <td>{user.phoneNumber || '—'}</td>
                   <td>
-                    <span className={`status-badge ${user.role === 'ADMIN' ? '' : 'status--active'}`}
+                    <span className={`status-badge ${user.role === 'ADMIN' ? '' : (user.status === 'BLOCKED' ? 'status--inactive' : 'status--active')}`}
                       style={user.role === 'ADMIN' ? { background: 'rgba(229,9,20,0.1)', color: 'var(--accent)' } : {}}>
-                      {user.role === 'ADMIN' ? 'Admin' : 'Khách hàng'}
+                      {user.role === 'ADMIN' ? 'Admin' : (user.status === 'BLOCKED' ? 'Bị khoá' : 'Khách hàng')}
                     </span>
                   </td>
                   <td>{formatDate(user.createdAt)}</td>
@@ -115,11 +151,13 @@ const UserManagement = () => {
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
                         </svg>
                       </button>
-                      <button className="btn btn-ghost btn-sm" title="Khoá tài khoản" style={{ color: '#ef4444' }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
+                      <button 
+                        className="btn btn-ghost btn-sm" 
+                        title={user.status === 'BLOCKED' ? 'Mở khoá tài khoản' : 'Khoá tài khoản'} 
+                        style={{ color: user.status === 'BLOCKED' ? '#10b981' : '#ef4444' }}
+                        onClick={() => handleToggleStatus(user)}
+                      >
+                        {user.status === 'BLOCKED' ? <UnlockIcon /> : <LockIcon />}
                       </button>
                     </div>
                   </td>

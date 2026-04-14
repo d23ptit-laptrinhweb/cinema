@@ -139,4 +139,11 @@ public class UserService {
         return userMapper.toUserResponse(userRepository.save(user));
      }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse updateUserStatus(String id, UserStatus status) {
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        user.setStatus(status);
+        return userMapper.toUserResponse(userRepository.save(user));
+    }
+
 }

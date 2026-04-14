@@ -1,10 +1,13 @@
 package com.ltweb.backend.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.ltweb.backend.entity.Seat;
+import com.ltweb.backend.enums.SeatType;
 import com.ltweb.backend.mapper.RoomMapper;
 import com.ltweb.backend.repository.SeatRepository;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.ltweb.backend.repository.ShowtimeRepository;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateRoomRequest;
@@ -19,6 +22,7 @@ import com.ltweb.backend.repository.BranchRepository;
 import com.ltweb.backend.repository.RoomRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,18 +30,25 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final BranchRepository branchRepository;
     private final SeatRepository seatRepository;
+    private final ShowtimeRepository showtimeRepository;
     private final RoomMapper roomMapper;
 
+    @Transactional
     public RoomResponse createRoom(CreateRoomRequest request) {
-        Branch branch = branchRepository.findById(request.getBranchId())
-            .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));
+        Branch branch = getBranch(request.getBranchId());
 
         Room room = roomMapper.toRoomEntity(request);
         room.setBranch(branch);
         Room savedRoom = roomRepository.save(room);
 
-        // Intelligent seat generation
-        int capacity = savedRoom.getSeatCapacity();
+        generateSeats(savedRoom);
+
+        return roomMapper.toRoomResponse(savedRoom);
+    }
+
+    private void generateSeats(Room room) {
+        int capacity = room.getSeatCapacity();
+        // Intelligent grid calculation
         int cols = (int) Math.ceil(Math.sqrt(capacity * 1.8));
         int rows = (int) Math.ceil((double) capacity / cols);
 
@@ -53,6 +64,7 @@ public class RoomService {
         }
 
         int seatCount = 0;
+        List<Seat> seats = new ArrayList<>();
         for (int r = 0; r < rows; r++) {
             char rowChar = (char) ('A' + r);
             String rowLabel = String.valueOf(rowChar);
@@ -60,101 +72,74 @@ public class RoomService {
             for (int c = 1; c <= cols; c++) {
                 if (++seatCount > capacity) break;
 
-                com.ltweb.backend.enums.SeatType type = vipRowIndices.contains(r) 
-                    ? com.ltweb.backend.enums.SeatType.VIP 
-                    : com.ltweb.backend.enums.SeatType.STANDARD;
+                SeatType type = vipRowIndices.contains(r)
+                    ? SeatType.VIP
+                    : SeatType.STANDARD;
 
-                com.ltweb.backend.entity.Seat seat = com.ltweb.backend.entity.Seat.builder()
-                        .room(savedRoom)
+                seats.add(Seat.builder()
+                        .room(room)
                         .rowLabel(rowLabel)
                         .seatNumber(c)
                         .seatCode(rowLabel + c)
                         .seatType(type)
                         .isActive(true)
-                        .build();
-                seatRepository.save(seat);
+                        .build());
             }
+        }
+        seatRepository.saveAll(seats);
+    }
+
+    public List<RoomResponse> getAllRooms(String branchId, RoomStatus status) {
+        List<Room> room = roomRepository.findByBranchIdAndStatus(branchId, status);
+        return room.stream().map(roomMapper::toRoomResponse).toList();
+    }
+
+    public RoomResponse getRoomById(Long roomId) {
+        Room room = getRoom(roomId);
+        return roomMapper.toRoomResponse(room);
+    }
+
+    @Transactional
+    public RoomResponse updateRoom(Long roomId, UpdateRoomRequest request) {
+        Room room = getRoom(roomId);
+        
+        Integer oldCapacity = room.getSeatCapacity();
+        roomMapper.updateRoom(room, request);
+
+        if (request.getBranchId() != null) {
+            Branch branch = getBranch(request.getBranchId());
+            room.setBranch(branch);
+        }
+
+        Room savedRoom = roomRepository.save(room);
+
+        // Nếu thay đổi sức chứa, cần vẽ lại sơ đồ ghế
+        if (request.getSeatCapacity() != null && !request.getSeatCapacity().equals(oldCapacity)) {
+            // Kiểm tra xem phòng này đã có suất chiếu chưa
+            if (showtimeRepository.existsByRoomId(roomId)) {
+                throw new AppException(ErrorCode.ROOM_HAS_SHOWTIMES);
+            }
+            
+            seatRepository.deleteByRoomId(roomId);
+            generateSeats(savedRoom);
         }
 
         return roomMapper.toRoomResponse(savedRoom);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<RoomResponse> getAllRooms(String branchId, RoomStatus status) {
-        if (branchId != null && status != null) {
-            return roomRepository.findByBranchIdAndStatus(branchId, status).stream()
-                .map(this::toRoomResponse)
-                .toList();
-        }
-        if (branchId != null) {
-            return roomRepository.findByBranchId(branchId).stream()
-                .map(this::toRoomResponse)
-                .toList();
-        }
-        if (status != null) {
-            return roomRepository.findByStatus(status).stream()
-                .map(this::toRoomResponse)
-                .toList();
-        }
-        return roomRepository.findAll().stream()
-            .map(this::toRoomResponse)
-            .toList();
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    public RoomResponse getRoomById(Long id) {
-        Room room = roomRepository.findById(id)
-            .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
-        return toRoomResponse(room);
-    }
-    
-
-    @PreAuthorize("hasRole('ADMIN')")
-    public RoomResponse updateRoom(Long id, UpdateRoomRequest request) {
-        Room room = roomRepository.findById(id)
-            .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
-
-        if (request.getBranchId() != null) {
-            Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));
-            room.setBranch(branch);
-        }
-
-        if (request.getCode() != null) {
-            room.setCode(request.getCode());
-        }
-        if (request.getName() != null) {
-            room.setName(request.getName());
-        }
-        if (request.getRoomType() != null) {
-            room.setRoomType(request.getRoomType());
-        }
-        if (request.getSeatCapacity() != null) {
-            room.setSeatCapacity(request.getSeatCapacity());
-        }
-        if (request.getStatus() != null) {
-            room.setStatus(request.getStatus());
-        }
-
-        return toRoomResponse(roomRepository.save(room));
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    public void deleteRoom(Long id) {
-        Room room = roomRepository.findById(id)
-            .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+    public void deleteRoom(Long roomId) {
+        Room room = getRoom(roomId);
         roomRepository.delete(room);
     }
 
-    private RoomResponse toRoomResponse(Room room) {
-        return RoomResponse.builder()
-            .id(room.getId())
-            .code(room.getCode())
-            .name(room.getName())
-            .roomType(room.getRoomType())
-            .seatCapacity(room.getSeatCapacity())
-            .status(room.getStatus())
-            .branchId(room.getBranch().getBranchId())
-            .build();
+    // ===== PRIVATE HELPER =====
+    private Room getRoom(Long roomId) {
+        return roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+    }
+
+    private Branch getBranch(String branchId) {
+        return branchRepository.findById(branchId)
+                .orElseThrow(() -> new AppException(ErrorCode.BRANCH_NOT_FOUND));
     }
 }

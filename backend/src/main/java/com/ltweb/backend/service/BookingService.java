@@ -11,16 +11,15 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.ltweb.backend.dto.response.SeatStatusEvent;
+import com.ltweb.backend.mapper.BookingMapper;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateBookingRequest;
 import com.ltweb.backend.dto.request.UpdateBookingRequest;
 import com.ltweb.backend.dto.response.BookingResponse;
-import com.ltweb.backend.dto.response.TicketResponse;
 import com.ltweb.backend.entity.Booking;
 import com.ltweb.backend.entity.Showtime;
 import com.ltweb.backend.entity.Ticket;
@@ -35,9 +34,9 @@ import com.ltweb.backend.repository.ShowtimeRepository;
 import com.ltweb.backend.repository.TicketRepository;
 import com.ltweb.backend.repository.UserRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -50,13 +49,12 @@ public class BookingService {
     private final UserRepository userRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final SimpMessagingTemplate simpMessagingTemplate;
+    private final BookingMapper bookingMapper;
 
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest request) {
-        var context = SecurityContextHolder.getContext();
-        String username = Objects.requireNonNull(context.getAuthentication()).getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        //người dùng hiện tại
+        User user = getUserCurrent();
 
         Showtime showtime = showtimeRepository.findById(request.getShowtimeId())
                 .orElseThrow(() -> new AppException(ErrorCode.SHOWTIME_NOT_FOUND));
@@ -89,8 +87,7 @@ public class BookingService {
                 throw new AppException(ErrorCode.TICKET_NOT_AVAILABLE);
             }
 
-            // lock ghế xong broadcast qua WebSocket để cập nhật real time trạng thái hàng
-            // ghế
+            // lock ghế xong broadcast qua WebSocket để cập nhật real time trạng thái hàng ghế
             simpMessagingTemplate.convertAndSend(
                     "/topic/showtime/" + showtime.getId() + "/seats",
                     SeatStatusEvent.builder()
@@ -112,7 +109,7 @@ public class BookingService {
                 .status(BookingStatus.PENDING)
                 .paymentCreatedAt(LocalDateTime.now())
                 .paymentStatus(PaymentStatus.PENDING)
-                .expiresAt(LocalDateTime.now().plusMinutes(30))
+                .expiresAt(LocalDateTime.now().plusMinutes(6))
                 .build();
 
         bookingRepository.save(booking);
@@ -124,69 +121,62 @@ public class BookingService {
         ticketRepository.saveAll(selectedTickets);
         booking.setTickets(selectedTickets);
 
-        log.info("Booking created with code: {} for user: {}", bookingCode, username);
+        log.info("Booking created with code: {} for user: {}", bookingCode, user.getUsername());
 
-        return toBookingResponse(booking);
+        return bookingMapper.toBookingResponse(booking);
     }
 
+    @Transactional(readOnly = true)
     public List<BookingResponse> getAllBookings() {
         return bookingRepository.findAll().stream()
-                .map(this::toBookingResponse)
+                .map(bookingMapper::toBookingResponse)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public BookingResponse getBookingById(String bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        return toBookingResponse(booking);
+        Booking booking = getBooking(bookingId);
+        return bookingMapper.toBookingResponse(booking);
     }
 
+    @Transactional(readOnly = true)
     public BookingResponse getMyBookings(String bookingId) {
-        var context = SecurityContextHolder.getContext();
-        String username = Objects.requireNonNull(context.getAuthentication()).getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User user = getUserCurrent();
 
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        Booking booking = getBooking(bookingId);
 
         if (!booking.getUser().getId().equals(user.getId())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
-        return toBookingResponse(booking);
+        return bookingMapper.toBookingResponse(booking);
     }
 
+    @Transactional(readOnly = true)
     public List<BookingResponse> getMyBookingsList() {
-        var context = SecurityContextHolder.getContext();
-        String username = Objects.requireNonNull(context.getAuthentication()).getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User user = getUserCurrent();
 
         return bookingRepository.findByUserId(user.getId()).stream()
-                .map(this::toBookingResponse)
+                .map(bookingMapper::toBookingResponse)
                 .toList();
     }
 
     @Transactional
     public BookingResponse updateBooking(String bookingId, UpdateBookingRequest request) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        Booking booking = getBooking(bookingId);
 
         if (request.getStatus() != null) {
             booking.setStatus(request.getStatus());
         }
 
-        booking = bookingRepository.save(booking);
-        return toBookingResponse(booking);
+        return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
 
     @Transactional
     public void cancelBooking(String bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        Booking booking = getBooking(bookingId);
 
-        // Only allow cancelling PENDING bookings (not yet paid)
+        // Chỉ cho phép huỷ khi trạng thái PENDING (đang chờ thanh toán)
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new AppException(ErrorCode.BOOKING_CANNOT_CANCEL);
         }
@@ -194,9 +184,9 @@ public class BookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
 
-        // Revert ticket status from HOLDING back to AVAILABLE
+        // Trả trạng thái của vé về AVAILABLE
         booking.getTickets().forEach(ticket -> {
-            ticket.setBooking(null);
+            ticket.setBooking(null); // huỷ connect với booking
             ticket.setTicketStatus(TicketStatus.AVAILABLE);
             ticketRepository.save(ticket);
 
@@ -208,7 +198,7 @@ public class BookingService {
                             .build());
         });
 
-        unlockSeats(booking.getShowtime().getId(), booking.getTickets());
+        unlockSeats(booking.getShowtime().getId(), booking.getTickets()); // chủ động huỷ
 
         if (booking.getPaymentStatus() == PaymentStatus.PENDING) {
             booking.setPaymentStatus(PaymentStatus.CANCELLED);
@@ -216,56 +206,6 @@ public class BookingService {
         }
 
         log.info("Booking cancelled: {}", bookingId);
-    }
-
-    private String generateBookingCode() {
-        // Format: BK-YYYYMMDD-XXXXXX (6 random characters)
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String randomPart = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        return "BK-" + timestamp + "-" + randomPart;
-    }
-
-    private BookingResponse toBookingResponse(Booking booking) {
-        Showtime showtime = booking.getShowtime();
-        return BookingResponse.builder()
-                .bookingId(booking.getId())
-                .bookingCode(booking.getBookingCode())
-                .userId(booking.getUser().getId())
-                .showtimeId(showtime.getId())
-                .filmName(showtime.getFilm() != null ? showtime.getFilm().getFilmName() : null)
-                .filmThumbnailUrl(showtime.getFilm() != null ? showtime.getFilm().getThumbnailUrl() : null)
-                .roomName(showtime.getRoom() != null ? showtime.getRoom().getName() : null)
-                .branchName(showtime.getRoom() != null && showtime.getRoom().getBranch() != null
-                        ? showtime.getRoom().getBranch().getName()
-                        : null)
-                .showtimeStart(showtime.getStartTime())
-                .showtimeEnd(showtime.getEndTime())
-                .seatCodes(booking.getTickets().stream()
-                        .map(ticket -> ticket.getSeat() != null ? ticket.getSeat().getSeatCode() : null)
-                        .filter(Objects::nonNull)
-                        .toList())
-                .totalAmount(booking.getTotalAmount())
-                .status(booking.getStatus())
-                .expiresAt(booking.getExpiresAt())
-                .createdAt(booking.getCreatedAt())
-                .updatedAt(booking.getUpdatedAt())
-                .paymentMethod(booking.getPaymentMethod())
-                .paymentStatus(booking.getPaymentStatus())
-                .providerTxnId(booking.getProviderTxnId())
-                .paidAt(booking.getPaidAt())
-                .paymentCreatedAt(booking.getPaymentCreatedAt())
-                .tickets(booking.getTickets().stream()
-                        .map(ticket -> TicketResponse.builder()
-                                .ticketId(ticket.getId())
-                                .bookingId(ticket.getBooking() != null ? ticket.getBooking().getId() : null)
-                                .showtimeId(ticket.getShowtime().getId())
-                                .seatId(ticket.getSeat().getId())
-                                .price(ticket.getPrice())
-                                .ticketStatus(ticket.getTicketStatus())
-                                .qrCode(ticket.getQrCode())
-                                .build())
-                        .toList())
-                .build();
     }
 
     private String getSeatKey(String showTimeId, String seatId) {
@@ -281,5 +221,24 @@ public class BookingService {
         } catch (Exception e) {
             log.error("Thất bại trong việc xoá vé: {}", e.getMessage());
         }
+    }
+
+    // ===== PRIVATE HELPER =====
+    private User getUserCurrent() {
+        String username = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private String generateBookingCode() {
+        // Format: BK-YYYYMMDD-XXXXXX (6 random characters)
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String randomPart = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        return "BK-" + timestamp + "-" + randomPart;
+    }
+
+    private Booking getBooking(String bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
     }
 }

@@ -61,11 +61,58 @@ export default function FilmDetailPage() {
     return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const getYoutubeId = (url) => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+  const getEmbedUrl = (url) => {
+    if (!url) return '';
+    try {
+      // Trường hợp Admin nhập trực tiếp ID (eg: dQw4w9WgXcQ)
+      if (/^[a-zA-Z0-9_-]{11}$/.test(url.trim())) {
+        return `https://www.youtube.com/embed/${url.trim()}?autoplay=1`;
+      }
+      
+      const parsedUrl = new URL(url);
+      
+      // Trường hợp link chuẩn m.youtube.com hoặc www.youtube.com
+      if (parsedUrl.hostname.includes('youtube.com')) {
+        if (parsedUrl.pathname === '/watch') {
+          const v = parsedUrl.searchParams.get('v');
+          if (v) return `https://www.youtube.com/embed/${v}?autoplay=1`;
+        }
+        if (parsedUrl.pathname.startsWith('/shorts/')) {
+          const id = parsedUrl.pathname.split('/shorts/')[1].split('/')[0];
+          if (id) return `https://www.youtube.com/embed/${id}?autoplay=1`;
+        }
+        if (parsedUrl.pathname.startsWith('/embed/')) {
+           // Giữ nguyên link embed, chỉ thêm autoplay
+           if (!parsedUrl.searchParams.has('autoplay')) {
+             parsedUrl.searchParams.set('autoplay', '1');
+           }
+           return parsedUrl.toString();
+        }
+      }
+      
+      // Trường hợp link rút gọn youtu.be
+      if (parsedUrl.hostname === 'youtu.be') {
+        const id = parsedUrl.pathname.substring(1).split('?')[0];
+        if (id) return `https://www.youtube.com/embed/${id}?autoplay=1`;
+      }
+      
+      // Fallback fallback: Regex cho những URL kì dị
+      const regExp = /(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|&v=)([a-zA-Z0-9_-]+)/;
+      const match = url.match(regExp);
+      if (match && match[1]) {
+        return `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
+      }
+      
+      return url;
+    } catch (e) {
+      // Catch error (ví dụ Admin dán nguyên cục mã <iframe> HTML vào) -> Tách bằng Regex
+      const regExp = /(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|&v=)([a-zA-Z0-9_-]+)/;
+      const match = url.match(regExp);
+      if (match && match[1]) {
+        return `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
+      }
+      return url;
+    }
   };
 
   // Group: Date -> Branch Name -> Showtimes Array
@@ -214,12 +261,12 @@ export default function FilmDetailPage() {
       {/* Trailer Modal */}
       {showTrailer && film.trailerUrl && (
         <div className="modal-overlay" onClick={() => setShowTrailer(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-content modal-video" onClick={e => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setShowTrailer(false)}>×</button>
             <iframe
               width="100%"
               height="100%"
-              src={`https://www.youtube.com/embed/${getYoutubeId(film.trailerUrl)}?autoplay=1`}
+              src={getEmbedUrl(film.trailerUrl)}
               title="YouTube video player"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

@@ -2,9 +2,11 @@ package com.ltweb.backend.service;
 
 import java.util.List;
 
+import com.ltweb.backend.entity.Room;
+import com.ltweb.backend.exception.AppException;
+import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.mapper.SeatMapper;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateSeatRequest;
@@ -16,6 +18,7 @@ import com.ltweb.backend.repository.SeatRepository;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,41 +28,40 @@ public class SeatService {
     private final RoomRepository roomRepository;
     private final SeatMapper seatMapper;
 
-    @PreAuthorize("hasRole('ADMIN')")
     public SeatResponse createSeat(CreateSeatRequest request) {
 
-        var room = roomRepository.findById(request.getRoomId())
-            .orElseThrow(() -> new RuntimeException("Room not found"));
-
         if (seatRepository.existsByRoomIdAndSeatCode(request.getRoomId(), request.getSeatCode())) {
-            throw new RuntimeException("Seat already exists in this room");
+            throw new AppException(ErrorCode.SEAT_DUPLICATE);
         }
 
         Seat seat = seatMapper.toSeat(request);
-        // ensure the seat references the room before persisting (room join column is not nullable)
+
+        Room room = getRoom(request.getRoomId());
         seat.setRoom(room);
 
-        seatRepository.save(seat);
-
-        return seatMapper.toSeatResponse(seat);
+        return seatMapper.toSeatResponse(seatRepository.save(seat));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public SeatResponse updateSeat(String seatId, UpdateSeatRequest request) {
 
-        Seat seat = seatRepository.findById(seatId)
-                .orElseThrow(() -> new RuntimeException("Seat not found"));
+        Seat seat = getSeat(seatId);
 
-        seatMapper.updateSeat(seat,request);
+        seatMapper.updateSeat(seat, request);
 
-        return seatMapper.toSeatResponse(seat);
+        Room room = getRoom(request.getRoomId());
+        seat.setRoom(room);
+
+        return seatMapper.toSeatResponse(seatRepository.save(seat));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public void deleteSeat(String seatId) {
-        seatRepository.deleteById(seatId);
+        Seat seat = getSeat(seatId);
+        seatRepository.delete(seat);
     }
 
+    @Transactional(readOnly = true)
     public List<SeatResponse> getSeatsByRoom(Long roomId) {
         return seatRepository.findByRoomId(roomId)
                 .stream()
@@ -68,10 +70,18 @@ public class SeatService {
     }
 
     public SeatResponse getSeatById(String seatId) {
-
-        Seat seat = seatRepository.findById(seatId)
-                .orElseThrow(() -> new RuntimeException("Seat not found"));
-
+        Seat seat = getSeat(seatId);
         return seatMapper.toSeatResponse(seat);
+    }
+
+    // ===== PRIVATE HELPER =====
+    private Seat getSeat(String seatId) {
+        return seatRepository.findById(seatId)
+                .orElseThrow(() -> new AppException(ErrorCode.SEAT_NOT_FOUND));
+    }
+
+    private Room getRoom(Long roomId) {
+        return roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
     }
 }

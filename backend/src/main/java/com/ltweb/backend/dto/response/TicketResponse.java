@@ -11,24 +11,25 @@ import lombok.Data;
 @Builder
 public class TicketResponse {
 
-    private String ticketId;
-
-    private String bookingId;
-
-    private String showtimeId;
-
-    private String seatId;
-
-    private String seatCode;
-
-    private String rowLabel;
-
-    private Integer seatNumber;
+    private String id;
 
     private BigDecimal price;
 
     /** Trạng thái raw trong DB */
     private TicketStatus ticketStatus;
+
+    private String showtimeId;
+
+    private String seatId;
+
+    private String bookingId;
+
+    // đặc điểm của ghế
+    private String seatCode;
+
+    private String rowLabel;
+
+    private Integer seatNumber;
 
     /**
      * Trạng thái hiển thị cho frontend, kết hợp DB + Redis seat lock.

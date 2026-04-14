@@ -41,11 +41,4 @@ public class Showtime {
     @Enumerated(EnumType.STRING)
     private ShowtimeStatus status;
 
-    @OneToMany(mappedBy = "showtime", cascade = CascadeType.ALL)
-    @Builder.Default
-    private List<Ticket> tickets = new ArrayList<>();
-
-    @OneToMany(mappedBy = "showtime", cascade = CascadeType.ALL)
-    @Builder.Default
-    private List<Booking> bookings = new ArrayList<>();
 }

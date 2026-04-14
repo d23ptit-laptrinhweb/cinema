@@ -6,18 +6,31 @@ import './DigitalTicket.css';
 const DigitalTicket = ({ booking }) => {
   const ticketRef = useRef(null);
 
+  const parseLocalDateTime = (dateStr) => {
+    if (!dateStr) return null;
+    // Backend trả về LocalDateTime không có timezone (vd: "2026-04-14T16:30:00")
+    // Thêm Z sẽ bị lệch múi giờ, nên parse thủ công
+    const [datePart, timePart] = dateStr.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = (timePart || '00:00').split(':').map(Number);
+    return new Date(year, month - 1, day, hour, minute);
+  };
+
   const formatDate = (dateStr) => {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('vi-VN', {
-      day: '2-digit', month: '2-digit', year: 'numeric'
-    });
+    const d = parseLocalDateTime(dateStr);
+    if (!d) return '—';
+    const dd = d.getDate().toString().padStart(2, '0');
+    const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
   };
 
   const formatTime = (dateStr) => {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleTimeString('vi-VN', {
-      hour: '2-digit', minute: '2-digit'
-    });
+    const d = parseLocalDateTime(dateStr);
+    if (!d) return '—';
+    const hh = d.getHours().toString().padStart(2, '0');
+    const min = d.getMinutes().toString().padStart(2, '0');
+    return `${hh}:${min}`;
   };
 
   const handleDownload = () => {
@@ -60,8 +73,10 @@ const DigitalTicket = ({ booking }) => {
         <div className="ticket-main">
           <div className="ticket-header">
             <span className="ticket-brand">🎬 CinemaHub</span>
-            <span className="ticket-status-tag">
-              {booking.status === 'COMPLETED' ? 'VÉ HỢP LỆ' : 'CHỜ THANH TOÁN'}
+            <span className={`ticket-status-tag status-${booking.status?.toLowerCase()}`}>
+              {booking.status === 'COMPLETED' ? 'VÉ HỢP LỆ' : 
+               booking.status === 'PENDING' ? 'CHỜ THANH TOÁN' : 
+               booking.status === 'CANCELLED' ? 'ĐÃ HUỶ' : 'KHÔNG XÁC ĐỊNH'}
             </span>
           </div>
           

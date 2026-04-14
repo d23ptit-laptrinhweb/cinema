@@ -26,6 +26,9 @@ public class CreateFilmRequest {
     @Size(max = 5000, message = "Description must be at most 5000 characters")
     private String description;
 
+    @Size(max = 500, message = "Thumbnail URL must be at most 500 characters")
+    private String thumbnailUrl;
+
     private Integer durationMinutes;
 
     private AgeRating ageRating;
@@ -35,9 +38,6 @@ public class CreateFilmRequest {
 
     @Size(max = 100, message = "Subtitle must be at most 100 characters")
     private String subtitle;
-
-    @Size(max = 500, message = "Thumbnail URL must be at most 500 characters")
-    private String thumbnailUrl;
 
     @Size(max = 500, message = "Trailer URL must be at most 500 characters")
     private String trailerUrl;

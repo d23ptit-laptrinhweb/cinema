@@ -2,6 +2,7 @@ package com.ltweb.backend.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,7 +16,6 @@ import com.ltweb.backend.dto.response.ApiResponse;
 import com.ltweb.backend.dto.response.TicketResponse;
 import com.ltweb.backend.service.TicketService;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -25,6 +25,7 @@ public class TicketController {
     private final TicketService ticketService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<TicketResponse>> getAllTickets() {
         ApiResponse<List<TicketResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setResult(ticketService.getAllTickets());
@@ -46,9 +47,10 @@ public class TicketController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<TicketResponse> updateTicket(
         @PathVariable("id") String id,
-        @RequestBody @Valid UpdateTicketRequest request
+        @RequestBody UpdateTicketRequest request
     ) {
         ApiResponse<TicketResponse> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Ticket has been updated successfully!");
@@ -57,6 +59,7 @@ public class TicketController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> deleteTicket(@PathVariable("id") String id) {
         ApiResponse<String> apiResponse = new ApiResponse<>();
         ticketService.deleteTicket(id);

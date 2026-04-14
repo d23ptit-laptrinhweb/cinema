@@ -1,16 +1,16 @@
 package com.ltweb.backend.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import com.ltweb.backend.mapper.FilmMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.ltweb.backend.dto.request.CreateFilmRequest;
 import com.ltweb.backend.dto.request.UpdateFilmRequest;
 import com.ltweb.backend.dto.response.FilmResponse;
-import com.ltweb.backend.dto.response.GenreResponse;
 import com.ltweb.backend.entity.Film;
 import com.ltweb.backend.entity.Genre;
 import com.ltweb.backend.enums.FilmStatus;
@@ -20,141 +20,82 @@ import com.ltweb.backend.repository.FilmRepository;
 import com.ltweb.backend.repository.GenreRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class FilmService {
     private final FilmRepository filmRepository;
     private final GenreRepository genreRepository;
+    private final FilmMapper filmMapper;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public FilmResponse createFilm(CreateFilmRequest createFilmRequest) {
-        Film film = Film.builder()
-            .filmName(createFilmRequest.getFilmName())
-            .description(createFilmRequest.getDescription())
-            .durationMinutes(createFilmRequest.getDurationMinutes())
-            .ageRating(createFilmRequest.getAgeRating())
-            .language(createFilmRequest.getLanguage())
-            .subtitle(createFilmRequest.getSubtitle())
-            .thumbnailUrl(createFilmRequest.getThumbnailUrl())
-            .trailerUrl(createFilmRequest.getTrailerUrl())
-            .releaseDate(createFilmRequest.getReleaseDate())
-            .endDate(createFilmRequest.getEndDate())
-            .status(createFilmRequest.getStatus())
-            .build();
+        Film film = filmMapper.toFilm(createFilmRequest);
 
         if (createFilmRequest.getGenreIds() != null && !createFilmRequest.getGenreIds().isEmpty()) {
-            Set<Genre> genres = genreRepository.findAllById(createFilmRequest.getGenreIds())
-                .stream()
-                .collect(Collectors.toSet());
+            Set<Genre> genres = new HashSet<>(genreRepository.findAllById(createFilmRequest.getGenreIds()));
             film.setGenres(genres);
         }
 
-        return toFilmResponse(filmRepository.save(film));
+        return filmMapper.toFilmResponse(filmRepository.save(film));
     }
 
-    public List<FilmResponse> getAllFilms() {
-        return filmRepository.findAll().stream()
-            .map(this::toFilmResponse)
+    @Transactional(readOnly = true)
+    public List<FilmResponse> getAllFilms(String filmName) {
+        List<Film> films;
+        if (filmName != null && !filmName.isBlank()) {
+            films = filmRepository.findByFilmNameContainingIgnoreCase(filmName);
+        } else {
+            films = filmRepository.findAll();
+        }
+        return films.stream()
+            .map(filmMapper::toFilmResponse)
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<FilmResponse> getUpcomingFilms() {
         return filmRepository.findByStatus(FilmStatus.UPCOMING).stream()
-            .map(this::toFilmResponse)
+            .map(filmMapper::toFilmResponse)
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<FilmResponse> getNowShowingFilms() {
         return filmRepository.findByStatus(FilmStatus.NOW_SHOWING).stream()
-            .map(this::toFilmResponse)
+            .map(filmMapper::toFilmResponse)
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public FilmResponse getFilmById(String filmId) {
-        Film film = filmRepository.findById(filmId)
-            .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));
-        return toFilmResponse(film);
+        Film film = getFilm(filmId);
+        return filmMapper.toFilmResponse(film);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public FilmResponse updateFilm(String filmId, UpdateFilmRequest request) {
-        Film film = filmRepository.findById(filmId)
-            .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));
+        Film film = getFilm(filmId);
 
-        if (request.getFilmName() != null && !request.getFilmName().isBlank()) {
-            film.setFilmName(request.getFilmName());
-        }
-        if (request.getDescription() != null) {
-            film.setDescription(request.getDescription());
-        }
-        if (request.getDurationMinutes() != null) {
-            film.setDurationMinutes(request.getDurationMinutes());
-        }
-        if (request.getAgeRating() != null) {
-            film.setAgeRating(request.getAgeRating());
-        }
-        if (request.getLanguage() != null) {
-            film.setLanguage(request.getLanguage());
-        }
-        if (request.getSubtitle() != null) {
-            film.setSubtitle(request.getSubtitle());
-        }
-        if (request.getThumbnailUrl() != null) {
-            film.setThumbnailUrl(request.getThumbnailUrl());
-        }
-        if (request.getTrailerUrl() != null) {
-            film.setTrailerUrl(request.getTrailerUrl());
-        }
-        if (request.getReleaseDate() != null) {
-            film.setReleaseDate(request.getReleaseDate());
-        }
-        if (request.getEndDate() != null) {
-            film.setEndDate(request.getEndDate());
-        }
-        if (request.getStatus() != null) {
-            film.setStatus(request.getStatus());
-        }
+        filmMapper.updateFilm(film, request);
         if (request.getGenreIds() != null && !request.getGenreIds().isEmpty()) {
-            Set<Genre> genres = genreRepository.findAllById(request.getGenreIds())
-                .stream()
-                .collect(Collectors.toSet());
+            Set<Genre> genres = new HashSet<>(genreRepository.findAllById(request.getGenreIds()));
             film.setGenres(genres);
         }
-
-        return toFilmResponse(filmRepository.save(film));
+        return filmMapper.toFilmResponse(filmRepository.save(film));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public void deleteFilm(String filmId) {
-        Film film = filmRepository.findById(filmId)
-            .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));
+        Film film = getFilm(filmId);
         filmRepository.delete(film);
     }
 
-    private FilmResponse toFilmResponse(Film film) {
-        Set<GenreResponse> genreResponses = film.getGenres().stream()
-            .map(genre -> GenreResponse.builder()
-                .id(genre.getId())
-                .name(genre.getName())
-                .build())
-            .collect(Collectors.toSet());
-
-        return FilmResponse.builder()
-            .filmId(film.getId())
-            .filmName(film.getFilmName())
-            .description(film.getDescription())
-            .durationMinutes(film.getDurationMinutes())
-            .ageRating(film.getAgeRating())
-            .language(film.getLanguage())
-            .subtitle(film.getSubtitle())
-            .thumbnailUrl(film.getThumbnailUrl())
-            .trailerUrl(film.getTrailerUrl())
-            .releaseDate(film.getReleaseDate())
-            .endDate(film.getEndDate())
-            .status(film.getStatus())
-            .genres(genreResponses)
-            .build();
+    // ===== PRIVATE HELPER =====
+    private Film getFilm(String filmId) {
+        return filmRepository.findById(filmId)
+                .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));
     }
 }
 

@@ -15,6 +15,7 @@ public class ShowtimeResponse {
     private String roomName;
     private String roomType;
     private String branchName;
+    private String branchId;
     private String filmId;
     private String filmName;
     private LocalDateTime startTime;

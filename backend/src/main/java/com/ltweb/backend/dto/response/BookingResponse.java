@@ -21,18 +21,9 @@ public class BookingResponse {
 
     private String userId;
 
+    private String username;
+
     private String showtimeId;
-
-    // chi tiết xuất chiếu để hiển thị
-    private String filmName;
-    private String filmThumbnailUrl;
-    private String roomName;
-    private String branchName;
-    private LocalDateTime showtimeStart;
-    private LocalDateTime showtimeEnd;
-
-    // Seat codes
-    private List<String> seatCodes;
 
     private BigDecimal totalAmount;
 
@@ -44,6 +35,9 @@ public class BookingResponse {
 
     private LocalDateTime updatedAt;
 
+    // Seat codes
+    private List<String> seatCodes;
+
     private PaymentMethod paymentMethod;
 
     private PaymentStatus paymentStatus;
@@ -53,6 +47,14 @@ public class BookingResponse {
     private LocalDateTime paidAt;
 
     private LocalDateTime paymentCreatedAt;
+
+    // chi tiết xuất chiếu để hiển thị, lấy từ showtime (bên trong có film)
+    private String filmName;
+    private String filmThumbnailUrl;
+    private String roomName;
+    private String branchName;
+    private LocalDateTime showtimeStart;
+    private LocalDateTime showtimeEnd;
 
     private List<TicketResponse> tickets;
 }

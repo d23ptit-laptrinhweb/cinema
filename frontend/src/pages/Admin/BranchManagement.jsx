@@ -272,7 +272,7 @@ const BranchManagement = () => {
       {/* BRANCH MODAL */}
       {branchModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '500px', height: 'auto', background: 'var(--bg-card)', padding: '32px', borderRadius: 'var(--radius-lg)' }}>
+          <div className="modal-content" style={{ maxWidth: '650px', height: 'auto', aspectRatio: 'unset', overflow: 'visible', background: 'var(--bg-card)', padding: '32px', borderRadius: 'var(--radius-lg)' }}>
             <h2 style={{ marginBottom: '24px' }}>{editingBranch ? 'Sửa chi nhánh' : 'Thêm chi nhánh mới'}</h2>
             <form onSubmit={handleBranchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
@@ -297,6 +297,13 @@ const BranchManagement = () => {
                 <label className="form-label">Địa chỉ</label>
                 <input className="input" value={branchForm.address} onChange={e => setBranchForm({...branchForm, address: e.target.value})} />
               </div>
+              <div className="form-group">
+                <label className="form-label">Trạng thái rạp</label>
+                <select className="input" value={branchForm.status} onChange={e => setBranchForm({...branchForm, status: e.target.value})}>
+                  <option value="ACTIVE">Hoạt động</option>
+                  <option value="INACTIVE">Tạm dừng</option>
+                </select>
+              </div>
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setBranchModal(false)}>Hủy</button>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Lưu lại</button>
@@ -309,7 +316,7 @@ const BranchManagement = () => {
       {/* ROOM MODAL */}
       {roomModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '500px', height: 'auto', background: 'var(--bg-card)', padding: '32px', borderRadius: 'var(--radius-lg)' }}>
+          <div className="modal-content" style={{ maxWidth: '650px', height: 'auto', aspectRatio: 'unset', overflow: 'visible', background: 'var(--bg-card)', padding: '32px', borderRadius: 'var(--radius-lg)' }}>
             <h2 style={{ marginBottom: '24px' }}>{editingRoom ? 'Sửa phòng chiếu' : 'Thêm phòng mới'}</h2>
             <form onSubmit={handleRoomSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
@@ -342,6 +349,14 @@ const BranchManagement = () => {
                 <div className="form-group">
                   <label className="form-label">Tổng số ghế (Sức chứa)</label>
                   <input type="number" className="input" value={roomForm.seatCapacity} onChange={e => setRoomForm({...roomForm, seatCapacity: parseInt(e.target.value)})} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Trạng thái phòng</label>
+                  <select className="input" value={roomForm.status} onChange={e => setRoomForm({...roomForm, status: e.target.value})}>
+                    <option value="ACTIVE">Hoạt động</option>
+                    <option value="INACTIVE">Tạm dừng</option>
+                    <option value="MAINTENANCE">Bảo trì</option>
+                  </select>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>

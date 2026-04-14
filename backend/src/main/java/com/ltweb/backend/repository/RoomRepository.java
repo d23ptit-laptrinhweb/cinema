@@ -1,7 +1,9 @@
 package com.ltweb.backend.repository;
 
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,12 +14,14 @@ import com.ltweb.backend.enums.RoomStatus;
 
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
-    @Query("select r from Room r where r.branch.branchId = :branchId")
-    List<Room> findByBranchId(@Param("branchId") String branchId);
 
-    List<Room> findByStatus(RoomStatus status);
+    @EntityGraph(attributePaths = { "branch" })
+    Optional<Room> findById(Long id);
 
-    @Query("select r from Room r where r.branch.branchId = :branchId and r.status = :status")
+    @EntityGraph(attributePaths = { "branch" })
+    @Query("select r from Room r where " +
+            "(:branchId is null or r.branch.branchId =:branchId) " +
+            "and (:status is null or r.status =:status)")
     List<Room> findByBranchIdAndStatus(
         @Param("branchId") String branchId,
         @Param("status") RoomStatus status

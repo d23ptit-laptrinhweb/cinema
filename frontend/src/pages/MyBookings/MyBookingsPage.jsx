@@ -58,25 +58,40 @@ export default function MyBookingsPage() {
     }
   };
 
+  const parseLocalDateTime = (dateStr) => {
+    if (!dateStr) return null;
+    const [datePart, timePart] = dateStr.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = (timePart || '00:00').split(':').map(Number);
+    return new Date(year, month - 1, day, hour, minute);
+  };
+
   const formatDateTime = (dateStr) => {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr);
-    return d.toLocaleString('vi-VN', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: false,
-    });
+    const d = parseLocalDateTime(dateStr);
+    if (!d) return '—';
+    const dd = d.getDate().toString().padStart(2, '0');
+    const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = d.getHours().toString().padStart(2, '0');
+    const min = d.getMinutes().toString().padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
   };
 
   const formatTime = (dateStr) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const d = parseLocalDateTime(dateStr);
+    if (!d) return '';
+    const hh = d.getHours().toString().padStart(2, '0');
+    const min = d.getMinutes().toString().padStart(2, '0');
+    return `${hh}:${min}`;
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const d = parseLocalDateTime(dateStr);
+    if (!d) return '';
+    const dd = d.getDate().toString().padStart(2, '0');
+    const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
   };
 
   const formatCurrency = (amount) => {

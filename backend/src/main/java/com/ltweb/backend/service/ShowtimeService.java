@@ -15,16 +15,23 @@ import com.ltweb.backend.dto.response.ShowtimeResponse;
 import com.ltweb.backend.entity.Film;
 import com.ltweb.backend.entity.Room;
 import com.ltweb.backend.entity.Showtime;
+import com.ltweb.backend.enums.BookingStatus;
+import com.ltweb.backend.enums.PaymentStatus;
+import com.ltweb.backend.enums.TicketStatus;
 import com.ltweb.backend.exception.AppException;
 import com.ltweb.backend.exception.ErrorCode;
 import com.ltweb.backend.mapper.ShowtimeMapper;
+import com.ltweb.backend.repository.BookingRepository;
 import com.ltweb.backend.repository.FilmRepository;
 import com.ltweb.backend.repository.RoomRepository;
 import com.ltweb.backend.repository.ShowtimeRepository;
+import com.ltweb.backend.repository.TicketRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ShowtimeService {
@@ -32,12 +39,14 @@ public class ShowtimeService {
     private final ShowtimeRepository showtimeRepository;
     private final RoomRepository roomRepository;
     private final FilmRepository filmRepository;
+    private final BookingRepository bookingRepository;
+    private final TicketRepository ticketRepository;
     private final ShowtimeMapper showtimeMapper;
     private final TicketService ticketService;
 
-    @PreAuthorize("hasRole('ADMIN')")
+
     @Transactional
-    public ShowtimeResponse create(CreateShowtimeRequest request) {
+    public ShowtimeResponse createShowtime(CreateShowtimeRequest request) {
 
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
@@ -60,32 +69,66 @@ public class ShowtimeService {
         return showtimeMapper.toResponse(savedShowtime);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    public ShowtimeResponse update(String id, UpdateShowtimeRequest request) {
+    @Transactional
+    public ShowtimeResponse update(String showtimeId, UpdateShowtimeRequest request) {
 
-        Showtime showtime = showtimeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Showtime not found"));
+        Showtime showtime = getShowtime(showtimeId);
 
         showtimeMapper.updateShowtime(showtime, request);
 
-        return showtimeMapper.toResponse(showtime);
+        // Check overlap nếu thời gian thay đổi
+        if (request.getStartTime() != null || request.getEndTime() != null) {
+            if (showtimeRepository.existsOverlappingShowtimeExcluding(
+                    showtime.getRoom().getId(),
+                    showtime.getStartTime(),
+                    showtime.getEndTime(),
+                    showtimeId)) {
+                throw new AppException(ErrorCode.SHOWTIME_TIME_OVERLAP);
+            }
+        }
+
+        return showtimeMapper.toResponse(showtimeRepository.save(showtime));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    public void delete(String id) {
-        Showtime showtime = showtimeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Showtime not found"));
+    @Transactional
+    public void delete(String showtimeId) {
+        Showtime showtime = getShowtime(showtimeId);
+
+        // Chặn xóa nếu đã có booking đã thanh toán thành công
+        boolean hasPaidBooking = !bookingRepository
+                .findByShowtimeIdAndStatus(showtimeId, BookingStatus.COMPLETED)
+                .isEmpty();
+        if (hasPaidBooking) {
+            throw new AppException(ErrorCode.SHOWTIME_HAS_BOOKINGS);
+        }
+
+        // Hủy các booking PENDING còn lại
+        bookingRepository
+                .findByShowtimeIdAndStatus(showtimeId, BookingStatus.PENDING)
+                .forEach(b -> {
+                    b.setStatus(BookingStatus.CANCELLED);
+                    b.setPaymentStatus(PaymentStatus.CANCELLED);
+                    b.getTickets().forEach(t -> {
+                        t.setBooking(null);
+                        t.setTicketStatus(TicketStatus.AVAILABLE);
+                    });
+                    bookingRepository.save(b);
+                });
+
+        // Xóa toàn bộ vé thuộc suất chiếu này trước khi xóa suất chiếu
+        ticketRepository.deleteByShowtimeId(showtimeId);
 
         showtimeRepository.delete(showtime);
     }
 
-    public ShowtimeResponse getById(String id) {
-        return showtimeRepository.findById(id)
-                .map(showtimeMapper::toResponse)
-                .orElseThrow(() -> new RuntimeException("Showtime not found"));
+    @Transactional(readOnly = true)
+    public ShowtimeResponse getById(String showtimeId) {
+        Showtime showtime = getShowtime(showtimeId);
+        return showtimeMapper.toResponse(showtime);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
     public List<ShowtimeResponse> getAll() {
         return showtimeRepository.findAll().stream()
                 .sorted(Comparator.comparing(Showtime::getStartTime).reversed())
@@ -93,7 +136,7 @@ public class ShowtimeService {
                 .toList();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
     public List<ShowtimeResponse> getByRoom(Long roomId) {
         return showtimeRepository.findByRoomId(roomId)
                 .stream()
@@ -101,6 +144,7 @@ public class ShowtimeService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ShowtimeResponse> getByFilm(String filmId) {
         return showtimeRepository.findByFilmId(filmId)
                 .stream()
@@ -112,13 +156,14 @@ public class ShowtimeService {
      * Lấy suất chiếu theo chi nhánh + ngày, nhóm theo phim.
      * Trả về danh sách Map, mỗi entry chứa thông tin phim + danh sách suất chiếu.
      */
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getByBranch(String branchId, LocalDate date) {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
 
         List<Showtime> showtimes = showtimeRepository.findByBranchAndDate(branchId, startOfDay, endOfDay);
 
-        // Group by film
+        // Nhóm theo film
         Map<String, List<Showtime>> grouped = showtimes.stream()
                 .collect(Collectors.groupingBy(
                         s -> s.getFilm().getId(),
@@ -127,7 +172,7 @@ public class ShowtimeService {
 
         List<Map<String, Object>> result = new ArrayList<>();
         for (var entry : grouped.entrySet()) {
-            Film film = entry.getValue().get(0).getFilm();
+            Film film = entry.getValue().getFirst().getFilm();
             Map<String, Object> filmGroup = new LinkedHashMap<>();
             filmGroup.put("filmId", film.getId());
             filmGroup.put("filmName", film.getFilmName());
@@ -155,5 +200,11 @@ public class ShowtimeService {
         }
 
         return result;
+    }
+
+    // ===== PRIVATE HELPER =====
+    private Showtime getShowtime(String showtimeId) {
+        return showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new AppException(ErrorCode.SHOWTIME_NOT_FOUND));
     }
 }

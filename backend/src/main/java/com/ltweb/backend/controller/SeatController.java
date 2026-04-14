@@ -3,6 +3,8 @@ package com.ltweb.backend.controller;
 import java.util.List;
 
 import com.ltweb.backend.service.SeatService;
+import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.ltweb.backend.dto.request.CreateSeatRequest;
@@ -21,21 +23,17 @@ public class SeatController {
     private final SeatService seatService;
 
     @PostMapping
-    public ApiResponse<SeatResponse> create(@RequestBody CreateSeatRequest request) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<SeatResponse> createSeat(@RequestBody @Valid CreateSeatRequest request) {
         ApiResponse<SeatResponse> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Create seat successfully!");
         apiResponse.setResult(seatService.createSeat(request));
         return apiResponse;
     }
 
-    @GetMapping
-    public ApiResponse<List<SeatResponse>> getAll() {
-        ApiResponse<List<SeatResponse>> apiResponse = new ApiResponse<>();
-        //apiResponse.setResult(seatService.getSeatsByRoom());
-        return apiResponse;
-    }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<SeatResponse> update(
         @PathVariable String id,
         @RequestBody UpdateSeatRequest request
@@ -47,6 +45,7 @@ public class SeatController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> delete(@PathVariable String id) {
         ApiResponse<String> apiResponse = new ApiResponse<>();
         seatService.deleteSeat(id);

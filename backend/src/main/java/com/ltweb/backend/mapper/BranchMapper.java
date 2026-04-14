@@ -15,5 +15,6 @@ public interface BranchMapper {
     BranchResponse toBranchResponse(Branch branch);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "branchId", ignore = true)
     void updateBranch(UpdateBranchRequest request, @MappingTarget Branch branch);
 }

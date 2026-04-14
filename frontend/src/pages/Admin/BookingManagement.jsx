@@ -28,7 +28,8 @@ const BookingManagement = () => {
     const matchStatus = statusFilter === 'ALL' || b.status === statusFilter;
     const matchSearch =
       b.bookingCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.filmName?.toLowerCase().includes(searchTerm.toLowerCase());
+      b.filmName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.username?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchStatus && matchSearch;
   });
 
@@ -46,7 +47,7 @@ const BookingManagement = () => {
   };
   const PAYMENT_MAP = {
     PENDING: { label: 'Chờ TT', className: 'status--pending' },
-    COMPLETED: { label: 'Đã TT', className: 'status--active' },
+    PAID: { label: 'Đã TT', className: 'status--active' },
     CANCELLED: { label: 'Đã huỷ', className: 'status--inactive' },
     FAILED: { label: 'Thất bại', className: 'status--inactive' },
   };
@@ -54,7 +55,7 @@ const BookingManagement = () => {
   if (loading) return <div className="loading"><div className="spinner" /></div>;
 
   const totalRevenue = bookings
-    .filter(b => b.paymentStatus === 'COMPLETED')
+    .filter(b => b.paymentStatus === 'PAID')
     .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
   return (
@@ -118,6 +119,7 @@ const BookingManagement = () => {
           <thead>
             <tr>
               <th>Mã đơn</th>
+              <th>Khách hàng</th>
               <th>Phim</th>
               <th>Chi nhánh</th>
               <th>Ghế</th>
@@ -144,6 +146,19 @@ const BookingManagement = () => {
                       <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '0.85rem' }}>
                         {b.bookingCode || `#${b.bookingId?.slice(0, 8)}`}
                       </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ 
+                          width: '24px', height: '24px', borderRadius: '50%', 
+                          background: 'linear-gradient(135deg, var(--purple), var(--blue))',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.7rem', fontWeight: 800, color: '#fff'
+                        }}>
+                          {(b.username || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{b.username || '—'}</span>
+                      </div>
                     </td>
                     <td>
                       <div>

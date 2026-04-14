@@ -31,8 +31,8 @@ export default function PaymentPage() {
         const data = res.data.result;
         setBooking(data);
         
-        // Calculate 10-minute expiry from createdAt
-        const expiry = new Date(data.createdAt).getTime() + 10 * 60 * 1000;
+        // Sử dụng expiresAt từ backend (mặc định là 6 phút)
+        const expiry = data.expiresAt ? new Date(data.expiresAt).getTime() : new Date(data.createdAt).getTime() + 6 * 60 * 1000;
         const now = new Date().getTime();
         const initialTime = Math.max(0, Math.floor((expiry - now) / 1000));
         
@@ -58,6 +58,25 @@ export default function PaymentPage() {
 
     return () => clearInterval(timer);
   }, [timeLeft, handleCancel]);
+
+  const parseLocalDateTime = (dateStr) => {
+    if (!dateStr) return null;
+    const [datePart, timePart] = dateStr.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = (timePart || '00:00').split(':').map(Number);
+    return new Date(year, month - 1, day, hour, minute);
+  };
+
+  const formatShowtime = (dateStr) => {
+    const d = parseLocalDateTime(dateStr);
+    if (!d) return '—';
+    const dd = d.getDate().toString().padStart(2, '0');
+    const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = d.getHours().toString().padStart(2, '0');
+    const min = d.getMinutes().toString().padStart(2, '0');
+    return `${hh}:${min} - ${dd}/${mm}/${yyyy}`;
+  };
 
   const formatTimeLimit = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -124,7 +143,7 @@ export default function PaymentPage() {
             {/* ... other info similar to before ... */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ color: 'var(--text-secondary)' }}>Suất chiếu:</span>
-              <span>{new Date(booking.startTime).toLocaleString('vi-VN')}</span>
+              <span>{formatShowtime(booking.showtimeStart)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ color: 'var(--text-secondary)' }}>Phòng:</span>
@@ -162,7 +181,7 @@ export default function PaymentPage() {
           </div>
           
           <p style={{ marginTop: 24, fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-            Lưu ý: Bạn có 10 phút để hoàn tất thanh toán trước khi ghế bị huỷ.
+            Lưu ý: Bạn có 30 phút để hoàn tất thanh toán trước khi ghế bị huỷ.
           </p>
         </div>
       </div>

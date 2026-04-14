@@ -32,14 +32,17 @@ public enum ErrorCode {
     VALIDATION_ERROR(400, "Request validation failed", HttpStatus.BAD_REQUEST),
     MISSING_REQUEST_HEADER(400, "Required request header is missing", HttpStatus.BAD_REQUEST),
     TOO_MANY_REQUESTS(429, "Too many requests", HttpStatus.TOO_MANY_REQUESTS),
+
     // Branch Management
     BRANCH_NOT_FOUND(400, "Branch does not exist", HttpStatus.BAD_REQUEST),
 
     // Room Management
     ROOM_NOT_FOUND(400, "Room does not exist", HttpStatus.BAD_REQUEST),
+    ROOM_HAS_SHOWTIMES(400, "Cannot change room structure because it has scheduled showtimes", HttpStatus.BAD_REQUEST),
 
     // Seat Management
     SEAT_NOT_FOUND(400, "Seat does not exist", HttpStatus.BAD_REQUEST),
+    SEAT_DUPLICATE(400, "SeatCode duplicate", HttpStatus.BAD_REQUEST),
 
     // Film Management
     FILM_NOT_FOUND(400, "Film does not exist", HttpStatus.BAD_REQUEST),
@@ -50,6 +53,7 @@ public enum ErrorCode {
     // Showtime Management
     SHOWTIME_NOT_FOUND(400, "Showtime does not exist", HttpStatus.BAD_REQUEST),
     SHOWTIME_TIME_OVERLAP(400, "Showtime time overlaps with an existing schedule", HttpStatus.BAD_REQUEST),
+    SHOWTIME_HAS_BOOKINGS(400, "Cannot delete showtime that has existing bookings", HttpStatus.BAD_REQUEST),
 
     // Booking Management
     BOOKING_NOT_FOUND(400, "Booking does not exist", HttpStatus.BAD_REQUEST),

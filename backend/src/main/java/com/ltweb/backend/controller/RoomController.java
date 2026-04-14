@@ -39,6 +39,7 @@ public class RoomController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<RoomResponse>> getAllRooms(
         @RequestParam(value = "branchId", required = false) String branchId,
         @RequestParam(value = "status", required = false) RoomStatus status
@@ -49,6 +50,7 @@ public class RoomController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<RoomResponse> getRoomById(@PathVariable("id") Long id) {
         ApiResponse<RoomResponse> apiResponse = new ApiResponse<>();
         apiResponse.setResult(roomService.getRoomById(id));
@@ -56,6 +58,7 @@ public class RoomController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<RoomResponse> updateRoom(
         @PathVariable("id") Long id,
         @RequestBody @Valid UpdateRoomRequest request
@@ -67,6 +70,7 @@ public class RoomController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> deleteRoom(@PathVariable("id") Long id) {
         ApiResponse<String> apiResponse = new ApiResponse<>();
         roomService.deleteRoom(id);

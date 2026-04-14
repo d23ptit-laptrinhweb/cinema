@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class UpdateShowtimeRequest {
-    private String showtimeId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private ShowtimeStatus status;

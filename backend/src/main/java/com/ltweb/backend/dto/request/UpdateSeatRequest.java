@@ -10,7 +10,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class UpdateSeatRequest {
-    private String seatId;
 
     private String seatCode;
 
@@ -21,4 +20,6 @@ public class UpdateSeatRequest {
     private SeatType seatType;
 
     private Boolean isActive;
+
+    private Long roomId;
 }

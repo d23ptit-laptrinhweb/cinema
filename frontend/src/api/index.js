@@ -24,12 +24,13 @@ export const userApi = {
   delete: (id) => axiosClient.delete(`/users/${id}`),
   getMyInfo: () => axiosClient.get('/my-info'),
   updateMyInfo: (data) => axiosClient.put('/my-info', data),
+  updateStatus: (id, status) => axiosClient.put(`/users/${id}/status`, null, { params: { status } }),
 };
 
 // ==================== FILM ====================
 export const filmApi = {
   create: (data) => axiosClient.post('/film', data),
-  getAll: () => axiosClient.get('/film'),
+  getAll: (params) => axiosClient.get('/film', { params }),
   getNowShowing: () => axiosClient.get('/film/now-showing'),
   getUpcoming: () => axiosClient.get('/film/upcoming'),
   getById: (id) => axiosClient.get(`/film/${id}`),

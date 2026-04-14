@@ -6,7 +6,10 @@ import java.util.Map;
 
 import com.ltweb.backend.service.ShowtimeService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 
 import com.ltweb.backend.dto.request.CreateShowtimeRequest;
 import com.ltweb.backend.dto.request.UpdateShowtimeRequest;
@@ -30,14 +33,16 @@ public class ShowtimeController {
     }
 
     @PostMapping
-    public ApiResponse<ShowtimeResponse> create(@RequestBody CreateShowtimeRequest request) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<ShowtimeResponse> create(@Valid @RequestBody CreateShowtimeRequest request) {
         ApiResponse<ShowtimeResponse> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Create showtime successfully!");
-        apiResponse.setResult(showtimeService.create(request));
+        apiResponse.setResult(showtimeService.createShowtime(request));
         return apiResponse;
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ShowtimeResponse> update(
             @PathVariable String id,
             @RequestBody UpdateShowtimeRequest request) {
@@ -63,6 +68,7 @@ public class ShowtimeController {
     }
 
     @GetMapping("/room/{roomId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<ShowtimeResponse>> getByRoom(@PathVariable Long roomId) {
         ApiResponse<List<ShowtimeResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setResult(showtimeService.getByRoom(roomId));

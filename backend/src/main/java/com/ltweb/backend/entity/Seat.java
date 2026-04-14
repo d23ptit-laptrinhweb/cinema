@@ -46,7 +46,4 @@ public class Seat {
 
     private Boolean isActive;
 
-    @OneToMany(mappedBy = "seat", cascade = CascadeType.ALL)
-    @Builder.Default
-    private List<Ticket> tickets = new ArrayList<>();
 }
