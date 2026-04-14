@@ -1,6 +1,8 @@
 package com.ltweb.backend.service;
 
 import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -90,6 +92,16 @@ public class ShowtimeService {
 
     public List<ShowtimeResponse> getByFilm(String filmId) {
         return showtimeRepository.findByFilmId(filmId)
+                .stream()
+                .map(showtimeMapper::toResponse)
+                .toList();
+    }
+
+    public List<ShowtimeResponse> getByFilmAndDateAndBranch(String filmId, LocalDate date, String branchId) {
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+
+        return showtimeRepository.findByFilmAndDateAndBranch(filmId, startOfDay, endOfDay, branchId)
                 .stream()
                 .map(showtimeMapper::toResponse)
                 .toList();

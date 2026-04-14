@@ -131,12 +131,20 @@ public class JwtService {
         if(redisToken.isEmpty()){
             throw new AppException(ErrorCode.TOKEN_INVALID);
         }
-        redisTokenRepository.deleteById(jwtId);
+
+        boolean isValidSignature;
         try {
-            return signedJWT.verify(new MACVerifier(secretKey));
+            isValidSignature = signedJWT.verify(new MACVerifier(secretKey));
         } catch (JOSEException e) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
         }
+
+        if (!isValidSignature) {
+            throw new AppException(ErrorCode.TOKEN_INVALID);
+        }
+
+        redisTokenRepository.deleteById(jwtId);
+        return true;
     }
 
     public JwtInfo parseToken(String token) {

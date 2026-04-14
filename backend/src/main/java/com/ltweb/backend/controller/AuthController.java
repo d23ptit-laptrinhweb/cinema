@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
@@ -43,7 +44,7 @@ public class AuthController {
     }
 
     @PostMapping("/auth/change-password")
-    public ApiResponse<Void> changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
+    public ApiResponse<Void> changePassword(@RequestBody @Valid ChangePasswordRequest changePasswordRequest) {
         ApiResponse<Void> apiResponse = new ApiResponse<>();
         apiResponse.setCode(200);
         apiResponse.setMessage("Change password successfully");

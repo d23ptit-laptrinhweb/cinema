@@ -1,10 +1,12 @@
 package com.ltweb.backend.service;
 
 import com.ltweb.backend.dto.request.CreateUserRequest;
+import com.ltweb.backend.dto.request.UpdateMyInfoRequest;
 import com.ltweb.backend.dto.request.UpdateUserRequest;
 import com.ltweb.backend.dto.response.PageResponse;
 import com.ltweb.backend.dto.response.UserResponse;
 import com.ltweb.backend.entity.User;
+import com.ltweb.backend.enums.Gender;
 import com.ltweb.backend.enums.UserRole;
 import com.ltweb.backend.enums.UserStatus;
 import com.ltweb.backend.exception.AppException;
@@ -27,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -129,13 +132,41 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @Transactional
     @PostAuthorize("returnObject.username == authentication.name")
-    public UserResponse updateMyInfo(UpdateUserRequest updateUserRequest){
+    public UserResponse updateMyInfo(UpdateMyInfoRequest updateMyInfoRequest){
         var context = SecurityContextHolder.getContext();
         String name = Objects.requireNonNull(context.getAuthentication()).getName();
         User user = userRepository.findByUsername(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        userMapper.updateUser(user, updateUserRequest);
+        if (StringUtils.hasText(updateMyInfoRequest.getFullName())) {
+            user.setFullName(updateMyInfoRequest.getFullName().trim());
+        }
+
+        if (updateMyInfoRequest.getDob() != null) {
+            user.setDob(updateMyInfoRequest.getDob());
+        }
+
+        if (StringUtils.hasText(updateMyInfoRequest.getPhoneNumber())) {
+            user.setPhoneNumber(updateMyInfoRequest.getPhoneNumber().trim());
+        }
+
+        if (StringUtils.hasText(updateMyInfoRequest.getEmail())) {
+            String email = updateMyInfoRequest.getEmail().trim().toLowerCase();
+            if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(email)) {
+                throw new AppException(ErrorCode.USER_EXISTED);
+            }
+            user.setEmail(email);
+        }
+
+        if (StringUtils.hasText(updateMyInfoRequest.getGender())) {
+            try {
+                user.setGender(Gender.valueOf(updateMyInfoRequest.getGender().trim().toUpperCase()));
+            } catch (IllegalArgumentException ex) {
+                throw new AppException(ErrorCode.VALIDATION_ERROR);
+            }
+        }
+
         return userMapper.toUserResponse(userRepository.save(user));
      }
 

@@ -17,6 +17,23 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, String> {
 
     List<Showtime> findByStartTimeBetween(LocalDateTime start, LocalDateTime end);
 
+        @Query("""
+                SELECT s
+                FROM Showtime s
+                WHERE s.film.id = :filmId
+                    AND s.startTime >= :startOfDay
+                    AND s.startTime < :endOfDay
+                    AND (:branchId IS NULL OR s.room.branch.branch_id = :branchId)
+                    AND s.status <> com.ltweb.backend.enums.ShowtimeStatus.CANCELLED
+                ORDER BY s.startTime ASC
+        """)
+        List<Showtime> findByFilmAndDateAndBranch(
+                        @Param("filmId") String filmId,
+                        @Param("startOfDay") LocalDateTime startOfDay,
+                        @Param("endOfDay") LocalDateTime endOfDay,
+                        @Param("branchId") String branchId
+        );
+
     @Query("""
         SELECT COUNT(s) > 0
         FROM Showtime s

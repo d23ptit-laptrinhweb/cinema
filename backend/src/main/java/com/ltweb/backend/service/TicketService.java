@@ -96,8 +96,12 @@ public class TicketService {
                 // Ghế đang bị lock tạm thời trong Redis (user đang ở bước thanh toán)
                 ticket.setDisplayStatus(TicketStatus.HOLDING);
             } else {
-                // Không có trong Redis -> lấy trực tiếp từ DB (AVAILABLE hoặc HOLDING cũ)
-                ticket.setDisplayStatus(ticket.getTicketStatus());
+                // Không có key Redis: HOLDING cũ coi như đã hết hạn giữ chỗ
+                if (ticket.getTicketStatus() == TicketStatus.HOLDING) {
+                    ticket.setDisplayStatus(TicketStatus.AVAILABLE);
+                } else {
+                    ticket.setDisplayStatus(ticket.getTicketStatus());
+                }
             }
         }
 
