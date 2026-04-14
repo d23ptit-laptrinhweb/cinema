@@ -1,6 +1,7 @@
 package com.ltweb.backend.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import com.ltweb.backend.dto.request.CreateBookingRequest;
 import com.ltweb.backend.dto.request.UpdateBookingRequest;
 import com.ltweb.backend.dto.response.BookingResponse;
+import com.ltweb.backend.dto.response.PageResponse;
 import com.ltweb.backend.dto.response.TicketResponse;
 import com.ltweb.backend.entity.Booking;
 import com.ltweb.backend.entity.Showtime;
@@ -38,6 +40,8 @@ import com.ltweb.backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -127,10 +131,21 @@ public class BookingService {
         return toBookingResponse(booking);
     }
 
-    public List<BookingResponse> getAllBookings() {
-        return bookingRepository.findAll().stream()
-                .map(this::toBookingResponse)
-                .toList();
+        public PageResponse<List<BookingResponse>> getAllBookings(LocalDate date, String bookingCode, Pageable pageable) {
+        String normalizedBookingCode = StringUtils.hasText(bookingCode) ? bookingCode.trim() : null;
+        LocalDateTime startOfDay = date != null ? date.atStartOfDay() : null;
+        LocalDateTime endOfDay = date != null ? date.plusDays(1).atStartOfDay() : null;
+
+        var bookingPage = bookingRepository.searchBookings(normalizedBookingCode, startOfDay, endOfDay, pageable)
+            .map(this::toBookingResponse);
+
+        return new PageResponse<>(
+            bookingPage.getContent(),
+            bookingPage.getNumber() + 1,
+            bookingPage.getSize(),
+            bookingPage.getTotalElements(),
+            bookingPage.getTotalPages()
+        );
     }
 
     public BookingResponse getBookingById(String bookingId) {
@@ -174,6 +189,10 @@ public class BookingService {
 
         if (request.getStatus() != null) {
             booking.setStatus(request.getStatus());
+        }
+
+        if (request.getPaymentStatus() != null) {
+            booking.setPaymentStatus(request.getPaymentStatus());
         }
 
         booking = bookingRepository.save(booking);
@@ -230,6 +249,10 @@ public class BookingService {
                 .bookingCode(booking.getBookingCode())
                 .userId(booking.getUser().getId())
                 .showtimeId(booking.getShowtime().getId())
+            .filmId(booking.getShowtime().getFilm().getId())
+            .roomId(booking.getShowtime().getRoom().getId())
+            .showtimeStartTime(booking.getShowtime().getStartTime())
+            .showtimeEndTime(booking.getShowtime().getEndTime())
                 .totalAmount(booking.getTotalAmount())
                 .status(booking.getStatus())
                 .expiresAt(booking.getExpiresAt())

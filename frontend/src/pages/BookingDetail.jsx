@@ -16,6 +16,7 @@ const paymentStatusLabels = {
   PAID: 'Đã thanh toán',
   FAILED: 'Thất bại',
   CANCELLED: 'Đã hủy',
+  EXPIRED: 'Hết hạn',
 };
 
 export default function BookingDetail() {
@@ -24,7 +25,6 @@ export default function BookingDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [booking, setBooking] = useState(null);
-  const [showtime, setShowtime] = useState(null);
   const [film, setFilm] = useState(null);
   const [room, setRoom] = useState(null);
   const [seats, setSeats] = useState([]);
@@ -35,14 +35,11 @@ export default function BookingDetail() {
         const bookingRes = await axiosClient.get(`/booking/my-bookings/${id}`);
         setBooking(bookingRes);
 
-        if (bookingRes?.showtimeId) {
-          const showtimeRes = await axiosClient.get(`/showtime/${bookingRes.showtimeId}`);
-          setShowtime(showtimeRes);
-
+        if (bookingRes?.filmId && bookingRes?.roomId) {
           const [filmRes, roomRes, seatsRes] = await Promise.all([
-            axiosClient.get(`/film/${showtimeRes.filmId}`).catch(() => null),
-            axiosClient.get(`/room/${showtimeRes.roomId}`).catch(() => null),
-            axiosClient.get(`/seat/room/${showtimeRes.roomId}`).catch(() => []),
+            axiosClient.get(`/film/${bookingRes.filmId}`).catch(() => null),
+            axiosClient.get(`/room/${bookingRes.roomId}`).catch(() => null),
+            axiosClient.get(`/seat/room/${bookingRes.roomId}`).catch(() => []),
           ]);
 
           setFilm(filmRes);
@@ -73,7 +70,7 @@ export default function BookingDetail() {
         <div className="card-soft p-10 text-center">
           <h2 className="mb-4 text-2xl font-black text-red-700">Không thể tải chi tiết vé</h2>
           <p className="mb-5 text-zinc-600">{error}</p>
-          <button onClick={() => navigate('/profile')} className="btn-primary">
+          <button onClick={() => navigate('/my-bookings')} className="btn-primary">
             Quay lại lịch sử đặt vé
           </button>
         </div>
@@ -108,7 +105,7 @@ export default function BookingDetail() {
   return (
     <div className="page-shell py-6">
       <button
-        onClick={() => navigate('/profile')}
+        onClick={() => navigate('/my-bookings')}
         className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-zinc-600 transition hover:text-red-700"
       >
         <ArrowLeftIcon className="h-5 w-5" />
@@ -144,7 +141,7 @@ export default function BookingDetail() {
                   <h2 className="text-2xl font-black text-zinc-900">{film.filmName}</h2>
                   <p className="mt-1 text-zinc-600">{room?.name || 'Phòng chiếu'}</p>
                   <p className="mt-1 text-sm text-zinc-500">
-                    {showtime?.startTime ? format(parseISO(showtime.startTime), 'HH:mm - dd/MM/yyyy') : ''}
+                    {booking?.showtimeStartTime ? format(parseISO(booking.showtimeStartTime), 'HH:mm - dd/MM/yyyy') : ''}
                   </p>
                 </div>
               </div>

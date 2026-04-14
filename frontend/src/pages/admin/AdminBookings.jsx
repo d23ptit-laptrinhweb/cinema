@@ -4,18 +4,67 @@ import { format, parseISO } from 'date-fns';
 
 export default function AdminBookings() {
   const [bookings, setBookings] = useState([]);
+  const [pageInfo, setPageInfo] = useState({ page: 1, size: 10, totalElements: 0, totalPages: 0 });
+  const [page, setPage] = useState(1);
+  const [size] = useState(10);
+  const [bookingCodeFilter, setBookingCodeFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ status: 'PENDING', paymentStatus: 'PENDING' });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await axiosClient.get('/booking');
-        setBookings(res || []);
+        setLoading(true);
+        const params = { page, size };
+        if (bookingCodeFilter.trim()) {
+          params.bookingCode = bookingCodeFilter.trim();
+        }
+        if (dateFilter) {
+          params.date = dateFilter;
+        }
+
+        const res = await axiosClient.get('/booking', { params });
+        setBookings(res?.data || []);
+        setPageInfo({
+          page: res?.page || 1,
+          size: res?.size || size,
+          totalElements: res?.totalElements || 0,
+          totalPages: res?.totalPages || 0,
+        });
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
     fetchBookings();
-  }, []);
+  }, [page, size, bookingCodeFilter, dateFilter]);
+
+  const beginEdit = (booking) => {
+    setEditingId(booking.bookingId);
+    setEditForm({
+      status: booking.status || 'PENDING',
+      paymentStatus: booking.paymentStatus || 'PENDING',
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm({ status: 'PENDING', paymentStatus: 'PENDING' });
+  };
+
+  const saveEdit = async (id) => {
+    setSaving(true);
+    try {
+      const updated = await axiosClient.put(`/booking/${id}`, editForm);
+      setBookings((prev) => prev.map((b) => (b.bookingId === id ? updated : b)));
+      setEditingId(null);
+    } catch (err) {
+      alert('Lỗi cập nhật: ' + (err?.message || JSON.stringify(err)));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleCancel = async (id) => {
     if (!confirm('Bạn chắc chắn muốn huỷ đơn này?')) return;
@@ -30,7 +79,38 @@ export default function AdminBookings() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Tất cả đơn đặt vé ({bookings.length})</h2>
+        <h2 className="text-xl font-bold">Tất cả đơn đặt vé ({pageInfo.totalElements})</h2>
+      </div>
+
+      <div className="mb-4 grid gap-3 md:grid-cols-3">
+        <input
+          value={bookingCodeFilter}
+          onChange={(e) => {
+            setPage(1);
+            setBookingCodeFilter(e.target.value);
+          }}
+          placeholder="Tìm theo mã booking"
+          className="rounded-xl border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-red-500"
+        />
+        <input
+          type="date"
+          value={dateFilter}
+          onChange={(e) => {
+            setPage(1);
+            setDateFilter(e.target.value);
+          }}
+          className="rounded-xl border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-red-500"
+        />
+        <button
+          onClick={() => {
+            setPage(1);
+            setBookingCodeFilter('');
+            setDateFilter('');
+          }}
+          className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+        >
+          Xóa bộ lọc
+        </button>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
@@ -56,18 +136,45 @@ export default function AdminBookings() {
                     <td className="px-4 py-3 font-mono text-xs text-zinc-600">{b.bookingCode || b.bookingId?.slice(0, 12)}</td>
                     <td className="px-4 py-3 text-zinc-600">{b.userId?.slice(0, 8)}...</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        b.status === 'COMPLETED' ? 'bg-green-500/10 text-green-600' :
-                        b.status === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
-                        'bg-amber-500/10 text-amber-500'
-                      }`}>{b.status}</span>
+                      {editingId === b.bookingId ? (
+                        <select
+                          value={editForm.status}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}
+                          className="rounded-lg border border-zinc-300 bg-white px-2 py-1 text-xs font-semibold text-zinc-800"
+                        >
+                          <option value="PENDING">PENDING</option>
+                          <option value="COMPLETED">COMPLETED</option>
+                          <option value="CANCELLED">CANCELLED</option>
+                          <option value="EXPIRED">EXPIRED</option>
+                        </select>
+                      ) : (
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          b.status === 'COMPLETED' ? 'bg-green-500/10 text-green-600' :
+                          b.status === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
+                          'bg-amber-500/10 text-amber-500'
+                        }`}>{b.status}</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        b.paymentStatus === 'PAID' ? 'bg-green-500/10 text-green-600' :
-                        b.paymentStatus === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
-                        'bg-amber-500/10 text-amber-500'
-                      }`}>{b.paymentStatus || 'N/A'}</span>
+                      {editingId === b.bookingId ? (
+                        <select
+                          value={editForm.paymentStatus}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, paymentStatus: e.target.value }))}
+                          className="rounded-lg border border-zinc-300 bg-white px-2 py-1 text-xs font-semibold text-zinc-800"
+                        >
+                          <option value="PENDING">PENDING</option>
+                          <option value="PAID">PAID</option>
+                          <option value="CANCELLED">CANCELLED</option>
+                          <option value="EXPIRED">EXPIRED</option>
+                        </select>
+                      ) : (
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          b.paymentStatus === 'PAID' ? 'bg-green-500/10 text-green-600' :
+                          b.paymentStatus === 'EXPIRED' ? 'bg-zinc-500/10 text-zinc-600' :
+                          b.paymentStatus === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
+                          'bg-amber-500/10 text-amber-500'
+                        }`}>{b.paymentStatus || 'N/A'}</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 font-bold text-red-700">
                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(b.totalAmount || 0)}
@@ -76,15 +183,65 @@ export default function AdminBookings() {
                       {b.createdAt ? format(parseISO(b.createdAt), 'HH:mm dd/MM/yyyy') : 'N/A'}
                     </td>
                     <td className="px-4 py-3">
-                      {b.status === 'PENDING' && (
-                        <button onClick={() => handleCancel(b.bookingId)} className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-bold hover:bg-red-500/20 transition-colors">Huỷ</button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {editingId === b.bookingId ? (
+                          <>
+                            <button
+                              onClick={() => saveEdit(b.bookingId)}
+                              disabled={saving}
+                              className="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 rounded-lg text-xs font-bold hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                            >
+                              {saving ? 'Đang lưu...' : 'Lưu'}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="px-3 py-1.5 bg-zinc-200 text-zinc-700 rounded-lg text-xs font-bold hover:bg-zinc-300 transition-colors"
+                            >
+                              Hủy sửa
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => beginEdit(b)}
+                              className="px-3 py-1.5 bg-blue-500/10 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-500/20 transition-colors"
+                            >
+                              Sửa
+                            </button>
+                            {b.status === 'PENDING' && (
+                              <button onClick={() => handleCancel(b.bookingId)} className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-bold hover:bg-red-500/20 transition-colors">Huỷ</button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-zinc-600">
+          Trang {pageInfo.page} / {Math.max(pageInfo.totalPages, 1)}
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page <= 1}
+            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Trước
+          </button>
+          <button
+            onClick={() => setPage((prev) => Math.min(prev + 1, Math.max(pageInfo.totalPages, 1)))}
+            disabled={page >= Math.max(pageInfo.totalPages, 1)}
+            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Sau
+          </button>
         </div>
       </div>
     </div>

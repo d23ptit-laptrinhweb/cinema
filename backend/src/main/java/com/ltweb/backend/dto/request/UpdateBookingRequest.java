@@ -1,6 +1,7 @@
 package com.ltweb.backend.dto.request;
 
 import com.ltweb.backend.enums.BookingStatus;
+import com.ltweb.backend.enums.PaymentStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,4 +15,6 @@ import lombok.Setter;
 public class UpdateBookingRequest {
     
     private BookingStatus status;
+
+    private PaymentStatus paymentStatus;
 }

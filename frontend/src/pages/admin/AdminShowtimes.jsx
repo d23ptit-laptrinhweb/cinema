@@ -8,6 +8,9 @@ export default function AdminShowtimes() {
   const [films, setFilms] = useState([]);
   const [branches, setBranches] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [page, setPage] = useState(1);
+  const [size] = useState(10);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -34,16 +37,39 @@ export default function AdminShowtimes() {
     finally { setLoading(false); }
   };
 
+  const fetchShowtimes = async () => {
+    if (!selectedFilm || !selectedDate) {
+      setShowtimes([]);
+      return;
+    }
+
+    try {
+      const params = {
+        filmId: selectedFilm,
+        date: selectedDate,
+      };
+
+      if (selectedTableBranch !== 'ALL') {
+        params.branchId = selectedTableBranch;
+      }
+
+      const res = await axiosClient.get('/showtime/filter', { params });
+      setShowtimes(res || []);
+    } catch {
+      setShowtimes([]);
+    }
+  };
+
   useEffect(() => {
-    if (!selectedFilm) { setShowtimes([]); return; }
-    const fetchShowtimes = async () => {
-      try {
-        const res = await axiosClient.get(`/showtime/film/${selectedFilm}`);
-        setShowtimes(res || []);
-      } catch { setShowtimes([]); }
-    };
     fetchShowtimes();
-  }, [selectedFilm]);
+  }, [selectedFilm, selectedDate, selectedTableBranch]);
+
+  useEffect(() => {
+    const totalPages = Math.max(Math.ceil(showtimes.length / size), 1);
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [showtimes, page, size]);
 
   const openCreate = () => {
     setEditing(null);
@@ -87,8 +113,7 @@ export default function AdminShowtimes() {
       setShowModal(false);
       // Refresh
       if (selectedFilm) {
-        const res = await axiosClient.get(`/showtime/film/${selectedFilm}`);
-        setShowtimes(res || []);
+        await fetchShowtimes();
       }
     } catch (err) { alert('Lỗi: ' + (err?.message || JSON.stringify(err))); }
   };
@@ -97,7 +122,7 @@ export default function AdminShowtimes() {
     if (!confirm('Xoá suất chiếu này?')) return;
     try {
       await axiosClient.delete(`/showtime/${id}`);
-      setShowtimes(prev => prev.filter(s => s.showtimeId !== id));
+      await fetchShowtimes();
     } catch (err) { alert('Lỗi: ' + (err?.message || JSON.stringify(err))); }
   };
 
@@ -105,12 +130,8 @@ export default function AdminShowtimes() {
     ? rooms.filter(r => r.branchId === selectedBranch)
     : [];
 
-  const filteredShowtimes = selectedTableBranch === 'ALL'
-    ? showtimes
-    : showtimes.filter(st => {
-      const room = rooms.find(r => String(r.roomId ?? r.id) === String(st.roomId));
-      return room?.branchId === selectedTableBranch;
-    });
+  const totalPages = Math.max(Math.ceil(showtimes.length / size), 1);
+  const pagedShowtimes = showtimes.slice((page - 1) * size, page * size);
 
   const getRoomName = (roomId) => {
     const room = rooms.find(r => String(r.roomId ?? r.id) === String(roomId));
@@ -130,12 +151,18 @@ export default function AdminShowtimes() {
       </div>
 
       {/* Film selector */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2">
-        <select className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none" value={selectedFilm} onChange={e => setSelectedFilm(e.target.value)}>
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <select className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none" value={selectedFilm} onChange={e => { setSelectedFilm(e.target.value); setPage(1); }}>
           <option value="">-- Chọn phim --</option>
           {films.map(f => <option key={f.filmId} value={f.filmId}>{f.filmName}</option>)}
         </select>
-        <select className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none" value={selectedTableBranch} onChange={e => setSelectedTableBranch(e.target.value)}>
+        <input
+          type="date"
+          className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none"
+          value={selectedDate}
+          onChange={e => { setSelectedDate(e.target.value); setPage(1); }}
+        />
+        <select className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-red-500 focus:outline-none" value={selectedTableBranch} onChange={e => { setSelectedTableBranch(e.target.value); setPage(1); }}>
           <option value="ALL">-- Tất cả rạp --</option>
           {branches.map(b => <option key={b.branchId} value={b.branchId}>{b.name}</option>)}
         </select>
@@ -149,9 +176,9 @@ export default function AdminShowtimes() {
                 <th className="px-4 py-3">Phòng</th><th className="px-4 py-3">Bắt đầu</th><th className="px-4 py-3">Kết thúc</th><th className="px-4 py-3">Trạng thái</th><th className="px-4 py-3">Hành động</th>
               </tr></thead>
               <tbody>
-                {filteredShowtimes.length === 0 ? (
+                {pagedShowtimes.length === 0 ? (
                   <tr><td colSpan={5} className="py-8 text-center text-zinc-500">Chưa có suất chiếu cho phim này</td></tr>
-                ) : filteredShowtimes.map(st => (
+                ) : pagedShowtimes.map(st => (
                   <tr key={st.showtimeId} className="border-b border-zinc-100 transition hover:bg-zinc-50">
                     <td className="px-4 py-3 font-medium text-zinc-900">{getRoomName(st.roomId)}</td>
                     <td className="px-4 py-3 text-zinc-600">{st.startTime ? format(parseISO(st.startTime), 'HH:mm dd/MM/yyyy') : ''}</td>
@@ -165,6 +192,28 @@ export default function AdminShowtimes() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {selectedFilm && (
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-sm text-zinc-600">Trang {page} / {totalPages}</p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+              disabled={page <= 1}
+              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Trước
+            </button>
+            <button
+              onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={page >= totalPages}
+              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Sau
+            </button>
           </div>
         </div>
       )}

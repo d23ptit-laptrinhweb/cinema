@@ -8,8 +8,7 @@ export default function Navbar() {
   const adminToken = localStorage.getItem('adminToken');
 
   const links = [
-    { to: '/', label: 'Trang chủ' },
-    { to: '/profile', label: 'Vé của tôi', auth: true },
+    { to: '/my-bookings', label: 'Vé của tôi', auth: true },
   ];
 
   const handleLogout = () => {

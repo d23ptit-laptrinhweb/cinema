@@ -11,6 +11,7 @@ import PaymentReturn from './pages/PaymentReturn';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import MyBookings from './pages/MyBookings';
 import ForgotPassword from './pages/ForgotPassword';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminFilms from './pages/admin/AdminFilms';
@@ -42,6 +43,7 @@ function App() {
           <Route path="register" element={<Register />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="my-bookings" element={<MyBookings />} />
         </Route>
 
         {/* Admin routes */}

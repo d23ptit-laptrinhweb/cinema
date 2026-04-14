@@ -117,6 +117,7 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
                         b.paymentStatus === 'PAID' ? 'bg-green-500/10 text-green-600' :
+                        b.paymentStatus === 'EXPIRED' ? 'bg-zinc-500/10 text-zinc-600' :
                         b.paymentStatus === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
                         'bg-amber-500/10 text-amber-500'
                       }`}>

@@ -23,6 +23,14 @@ public class BookingResponse {
 
     private String showtimeId;
 
+    private String filmId;
+
+    private Long roomId;
+
+    private LocalDateTime showtimeStartTime;
+
+    private LocalDateTime showtimeEndTime;
+
     private BigDecimal totalAmount;
 
     private BookingStatus status;

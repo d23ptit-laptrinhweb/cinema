@@ -1,8 +1,10 @@
 package com.ltweb.backend.controller;
 
 import java.util.List;
+import java.time.LocalDate;
 
 import com.ltweb.backend.service.ShowtimeService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import com.ltweb.backend.dto.request.CreateShowtimeRequest;
@@ -46,24 +48,14 @@ public class ShowtimeController {
         return apiResponse;
     }
 
-    @GetMapping("/{id}")
-    public ApiResponse<ShowtimeResponse> getById(@PathVariable String id) {
-        ApiResponse<ShowtimeResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(showtimeService.getById(id));
-        return apiResponse;
-    }
-
-    @GetMapping("/room/{roomId}")
-    public ApiResponse<List<ShowtimeResponse>> getByRoom(@PathVariable Long roomId) {
+    @GetMapping("/filter")
+    public ApiResponse<List<ShowtimeResponse>> getByFilmAndDateAndBranch(
+        @RequestParam String filmId,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+        @RequestParam(required = false) String branchId
+    ) {
         ApiResponse<List<ShowtimeResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(showtimeService.getByRoom(roomId));
-        return apiResponse;
-    }
-
-    @GetMapping("/film/{filmId}")
-    public ApiResponse<List<ShowtimeResponse>> getByFilm(@PathVariable String filmId) {
-        ApiResponse<List<ShowtimeResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(showtimeService.getByFilm(filmId));
+        apiResponse.setResult(showtimeService.getByFilmAndDateAndBranch(filmId, date, branchId));
         return apiResponse;
     }
 }

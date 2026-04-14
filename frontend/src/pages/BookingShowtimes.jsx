@@ -15,8 +15,10 @@ export default function BookingShowtimes() {
   const [rooms, setRooms] = useState([]);
   
   const [loading, setLoading] = useState(true);
+  const [showtimeLoading, setShowtimeLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedBranchId, setSelectedBranchId] = useState(null);
   const [dates, setDates] = useState([]);
 
   useEffect(() => {
@@ -31,15 +33,13 @@ export default function BookingShowtimes() {
 
     const fetchData = async () => {
       try {
-        const [filmRes, showtimeRes, branchRes, roomRes] = await Promise.all([
+        const [filmRes, branchRes, roomRes] = await Promise.all([
           axiosClient.get(`/film/${filmId}`).catch(() => null),
-          axiosClient.get(`/showtime/film/${filmId}`).catch(() => []),
           axiosClient.get(`/branch`).catch(() => []),
           axiosClient.get(`/room`).catch(() => [])
         ]);
         
         setFilm(filmRes);
-        setShowtimes(showtimeRes || []);
         setBranches(branchRes || []);
         setRooms(roomRes || []);
       } catch (error) {
@@ -51,6 +51,40 @@ export default function BookingShowtimes() {
     
     fetchData();
   }, [filmId]);
+
+  useEffect(() => {
+    if (branches.length > 0 && !selectedBranchId) {
+      setSelectedBranchId(branches[0].branchId);
+    }
+  }, [branches, selectedBranchId]);
+
+  useEffect(() => {
+    const fetchShowtimes = async () => {
+      try {
+        setShowtimeLoading(true);
+        setError('');
+
+        const params = {
+          filmId,
+          date: format(selectedDate, 'yyyy-MM-dd')
+        };
+
+        params.branchId = selectedBranchId;
+
+        const showtimeRes = await axiosClient.get('/showtime/filter', { params });
+        setShowtimes(showtimeRes || []);
+      } catch (error) {
+        setShowtimes([]);
+        setError(error?.message || 'Không thể tải suất chiếu.');
+      } finally {
+        setShowtimeLoading(false);
+      }
+    };
+
+    if (filmId && selectedBranchId) {
+      fetchShowtimes();
+    }
+  }, [filmId, selectedDate, selectedBranchId]);
 
   if (loading) {
     return (
@@ -68,27 +102,17 @@ export default function BookingShowtimes() {
     );
   }
 
-  // Filter showtimes by selected Date
-  const showtimesOnDate = showtimes.filter(st => {
+  // Keep only future and valid showtimes
+  const now = new Date();
+  const filteredShowtimes = showtimes.filter(st => {
     const stDate = parseISO(st.startTime);
-    return isSameDay(stDate, selectedDate) && st.status !== 'CANCELLED';
+    return stDate > now && st.status !== 'CANCELLED';
   });
 
-  // Group by Branch
-  const branchesWithShowtimes = branches.map(branch => {
-    // Find rooms in this branch
-    const branchRooms = rooms.filter(r => r.branchId === branch.branchId);
-    const roomIds = branchRooms.map(r => r.id);
-    
-    // Find showtimes in these rooms
-    const sts = showtimesOnDate.filter(st => roomIds.includes(st.roomId));
-    
-    return {
-      ...branch,
-      showtimes: sts.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
-      branchRooms
-    };
-  }).filter(b => b.showtimes.length > 0);
+  const selectedBranch = branches.find((branch) => branch.branchId === selectedBranchId);
+  const branchRooms = rooms.filter((room) => room.branchId === selectedBranchId);
+
+  const getRoomById = (roomId) => branchRooms.find((room) => String(room.roomId ?? room.id) === String(roomId));
 
   return (
     <div className="page-shell space-y-8 py-6">
@@ -136,10 +160,32 @@ export default function BookingShowtimes() {
         </div>
       </section>
 
+      <section className="card-soft p-6">
+        <h2 className="mb-5 flex items-center gap-2 text-xl font-black text-zinc-900">
+          <MapPinIcon className="h-6 w-6 text-red-600" />
+          Lọc theo rạp
+        </h2>
+        <div className="hide-scrollbar flex gap-3 overflow-x-auto pb-2">
+          {branches.map((branch) => (
+            <button
+              key={branch.branchId}
+              onClick={() => setSelectedBranchId(branch.branchId)}
+              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                selectedBranchId === branch.branchId
+                  ? 'border-red-600 bg-red-600 text-white'
+                  : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400'
+              }`}
+            >
+              {branch.name}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="space-y-5">
         <h2 className="flex items-center gap-2 text-xl font-black text-zinc-900">
           <MapPinIcon className="h-6 w-6 text-red-600" />
-          Chọn rạp và suất chiếu
+          Suất chiếu
         </h2>
       
       {error && (
@@ -148,41 +194,47 @@ export default function BookingShowtimes() {
         </div>
       )}
 
-      {branchesWithShowtimes.length === 0 ? (
+      {!selectedBranchId ? (
+        <div className="card-soft p-12 text-center text-zinc-600">
+          Hiện chưa có rạp để hiển thị suất chiếu.
+        </div>
+      ) : showtimeLoading ? (
+        <div className="card-soft flex min-h-[200px] items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div>
+        </div>
+      ) : filteredShowtimes.length === 0 ? (
         <div className="card-soft p-12 text-center text-zinc-600">
           Không có suất chiếu vào ngày này. Vui lòng thử ngày khác.
         </div>
       ) : (
-        <div className="space-y-6">
-          {branchesWithShowtimes.map(branch => (
-            <div key={branch.branchId} className="card-soft overflow-hidden">
-              <div className="border-b border-zinc-200 bg-zinc-50 p-4">
-                <h3 className="text-lg font-black text-zinc-900">{branch.name}</h3>
-                <p className="mt-1 text-sm text-zinc-600">{branch.address}</p>
-              </div>
-              <div className="p-6">
-                <div className="flex flex-wrap gap-4">
-                  {branch.showtimes.map(st => {
-                    const room = branch.branchRooms.find(r => r.id === st.roomId);
-                    return (
-                      <button
-                        key={st.showtimeId}
-                        onClick={() => navigate(`/booking/seat/${st.showtimeId}`)}
-                        className="group flex flex-col items-center rounded-lg border border-zinc-200 bg-white p-3 transition hover:border-red-500 hover:bg-red-50"
-                      >
-                        <span className="text-xl font-black text-zinc-900 transition group-hover:text-red-700">
-                          {format(parseISO(st.startTime), 'HH:mm')}
-                        </span>
-                        <span className="mt-1 text-xs text-zinc-500">
-                          {room ? room.name : 'Phòng chiếu'}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+        <div className="card-soft overflow-hidden">
+          <div className="border-b border-zinc-200 bg-zinc-50 p-4">
+            <h3 className="text-lg font-black text-zinc-900">{selectedBranch?.name || 'Rạp đã chọn'}</h3>
+            <p className="mt-1 text-sm text-zinc-600">{selectedBranch?.address || 'Đang cập nhật địa chỉ'}</p>
+          </div>
+          <div className="p-6">
+            <div className="flex flex-wrap gap-4">
+              {filteredShowtimes
+                .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+                .map((st) => {
+                  const room = getRoomById(st.roomId);
+                  return (
+                    <button
+                      key={st.showtimeId}
+                      onClick={() => navigate(`/booking/seat/${st.showtimeId}`)}
+                      className="group flex flex-col items-center rounded-lg border border-zinc-200 bg-white p-3 transition hover:border-red-500 hover:bg-red-50"
+                    >
+                      <span className="text-xl font-black text-zinc-900 transition group-hover:text-red-700">
+                        {format(parseISO(st.startTime), 'HH:mm')}
+                      </span>
+                      <span className="mt-1 text-xs text-zinc-500">
+                        {room ? room.name : 'Phòng chiếu'}
+                      </span>
+                    </button>
+                  );
+                })}
             </div>
-          ))}
+          </div>
         </div>
       )}
       </section>
