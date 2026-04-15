@@ -1,5 +1,6 @@
 package com.ltweb.backend.repository;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -14,8 +15,13 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
     boolean existsByEmail(String email);
     boolean existsByPhoneNumber(String phoneNumber);
 
+    @EntityGraph(attributePaths = {"bookings.showtime"})
     Optional<User> findByUsername(String username);
+    
+    @EntityGraph(attributePaths = {"bookings.showtime"})
     Optional<User> findByEmail(String email);
+    
+    @EntityGraph(attributePaths = {"bookings.showtime"})
     Optional<User> findByPhoneNumber(String phoneNumber);
 
     void deleteById(String id);

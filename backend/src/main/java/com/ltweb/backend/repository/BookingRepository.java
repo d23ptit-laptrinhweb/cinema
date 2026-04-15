@@ -4,18 +4,21 @@ import java.util.List;
 import java.util.Optional;
 import java.time.LocalDateTime;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.ltweb.backend.entity.Booking;
 import com.ltweb.backend.enums.BookingStatus;
 
 public interface BookingRepository extends JpaRepository<Booking, String> {
+    @EntityGraph(attributePaths = {"user", "showtime.room.branch", "showtime.film", "tickets.seat"})
     List<Booking> findByUserId(String userId);
 
+    @EntityGraph(attributePaths = {"user", "showtime.room.branch", "showtime.film", "tickets.seat"})
     Optional<Booking> findByBookingCode(String bookingCode);
 
     @Query("""
@@ -30,6 +33,7 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
             @Param("endOfDay") LocalDateTime endOfDay,
             Pageable pageable
     );
+
 
     List<Booking> findByStatusAndExpiresAtBefore(BookingStatus status, LocalDateTime time);
 }
