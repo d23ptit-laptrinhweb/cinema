@@ -59,7 +59,6 @@ export default function AdminDashboard() {
   const cards = [
     { title: 'Phim', value: stats.films, icon: FilmIcon, bg: 'bg-red-50 text-red-700' },
     { title: 'Chi nhánh', value: stats.branches, icon: BuildingOfficeIcon, bg: 'bg-zinc-100 text-zinc-700' },
-    { title: 'Đơn đặt vé', value: stats.bookings, icon: TicketIcon, bg: 'bg-red-50 text-red-700' },
     { title: 'Người dùng', value: stats.users, icon: UsersIcon, bg: 'bg-zinc-100 text-zinc-700' },
   ];
 
@@ -82,58 +81,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Bookings */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
-          <h3 className="text-lg font-bold text-zinc-900">Đơn đặt vé gần đây</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                <th className="px-6 py-3 font-medium">Mã đơn</th>
-                <th className="px-6 py-3 font-medium">Trạng thái</th>
-                <th className="px-6 py-3 font-medium">Thanh toán</th>
-                <th className="px-6 py-3 font-medium">Tổng tiền</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentBookings.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-zinc-500">Chưa có đơn đặt vé nào</td>
-                </tr>
-              ) : (
-                recentBookings.map(b => (
-                  <tr key={b.bookingId} className="border-b border-zinc-100 transition-colors hover:bg-zinc-50">
-                    <td className="px-6 py-4 font-mono text-xs text-zinc-600">{b.bookingCode || b.bookingId?.slice(0, 12)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        b.status === 'COMPLETED' ? 'bg-green-500/10 text-green-600' :
-                        b.status === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
-                        'bg-amber-500/10 text-amber-500'
-                      }`}>
-                        {b.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        b.paymentStatus === 'PAID' ? 'bg-green-500/10 text-green-600' :
-                        b.paymentStatus === 'EXPIRED' ? 'bg-zinc-500/10 text-zinc-600' :
-                        b.paymentStatus === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
-                        'bg-amber-500/10 text-amber-500'
-                      }`}>
-                        {b.paymentStatus || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-bold text-red-700">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(b.totalAmount || 0)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+
     </div>
   );
 }

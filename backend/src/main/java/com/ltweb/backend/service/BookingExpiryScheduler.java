@@ -26,7 +26,6 @@ public class BookingExpiryScheduler {
 
     private final BookingRepository bookingRepository;
     private final TicketRepository ticketRepository;
-    private final RedisTemplate<String, String> redisTemplate;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     @Scheduled(fixedDelay = 60000)
@@ -51,7 +50,6 @@ public class BookingExpiryScheduler {
         booking.setPaymentStatus(PaymentStatus.EXPIRED);
         booking.setPaymentMethod(PaymentMethod.VNPAY);
 
-    
         booking.getTickets().forEach(ticket -> {
             ticket.setBooking(null);
             ticket.setTicketStatus(TicketStatus.AVAILABLE);
@@ -61,8 +59,7 @@ public class BookingExpiryScheduler {
                     SeatStatusEvent.builder()
                             .seatId(ticket.getSeat().getId())
                             .status("AVAILABLE")
-                            .build()
-            );
+                            .build());
         });
 
         bookingRepository.save(booking);

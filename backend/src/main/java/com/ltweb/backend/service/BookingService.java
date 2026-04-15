@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import com.ltweb.backend.dto.response.SeatStatusEvent;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -93,7 +92,6 @@ public class BookingService {
                 throw new AppException(ErrorCode.TICKET_NOT_AVAILABLE);
             }
 
-           
             simpMessagingTemplate.convertAndSend(
                     "/topic/showtime/" + showtime.getId() + "/seats",
                     SeatStatusEvent.builder()
@@ -131,21 +129,20 @@ public class BookingService {
         return toBookingResponse(booking);
     }
 
-        public PageResponse<List<BookingResponse>> getAllBookings(LocalDate date, String bookingCode, Pageable pageable) {
+    public PageResponse<List<BookingResponse>> getAllBookings(LocalDate date, String bookingCode, Pageable pageable) {
         String normalizedBookingCode = StringUtils.hasText(bookingCode) ? bookingCode.trim() : null;
         LocalDateTime startOfDay = date != null ? date.atStartOfDay() : null;
         LocalDateTime endOfDay = date != null ? date.plusDays(1).atStartOfDay() : null;
 
         var bookingPage = bookingRepository.searchBookings(normalizedBookingCode, startOfDay, endOfDay, pageable)
-            .map(this::toBookingResponse);
+                .map(this::toBookingResponse);
 
         return new PageResponse<>(
-            bookingPage.getContent(),
-            bookingPage.getNumber() + 1,
-            bookingPage.getSize(),
-            bookingPage.getTotalElements(),
-            bookingPage.getTotalPages()
-        );
+                bookingPage.getContent(),
+                bookingPage.getNumber() + 1,
+                bookingPage.getSize(),
+                bookingPage.getTotalElements(),
+                bookingPage.getTotalPages());
     }
 
     public BookingResponse getBookingById(String bookingId) {
@@ -153,7 +150,6 @@ public class BookingService {
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
         return toBookingResponse(booking);
     }
-
 
     public BookingResponse getMyBookings(String bookingId) {
         var context = SecurityContextHolder.getContext();
@@ -249,10 +245,10 @@ public class BookingService {
                 .bookingCode(booking.getBookingCode())
                 .userId(booking.getUser().getId())
                 .showtimeId(booking.getShowtime().getId())
-            .filmId(booking.getShowtime().getFilm().getId())
-            .roomId(booking.getShowtime().getRoom().getId())
-            .showtimeStartTime(booking.getShowtime().getStartTime())
-            .showtimeEndTime(booking.getShowtime().getEndTime())
+                .filmId(booking.getShowtime().getFilm().getId())
+                .roomId(booking.getShowtime().getRoom().getId())
+                .showtimeStartTime(booking.getShowtime().getStartTime())
+                .showtimeEndTime(booking.getShowtime().getEndTime())
                 .totalAmount(booking.getTotalAmount())
                 .status(booking.getStatus())
                 .expiresAt(booking.getExpiresAt())
