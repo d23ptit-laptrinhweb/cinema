@@ -18,7 +18,7 @@ export default function BookingSeat() {
   const [bookedSeatIds, setBookedSeatIds] = useState([]);
   const [prices, setPrices] = useState({});
   const [selectedSeats, setSelectedSeats] = useState([]);
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const wsClientRef = useRef(null);
@@ -70,7 +70,7 @@ export default function BookingSeat() {
   useEffect(() => {
     const socketUrl = `${window.location.origin}/api/ws`;
     console.log('WebSocket connecting to:', socketUrl);
-    
+
     const client = new Client({
       webSocketFactory: () => new SockJS(socketUrl),
       reconnectDelay: 5000,
@@ -222,11 +222,11 @@ export default function BookingSeat() {
                   const isCouple = seat.seatType === 'COUPLE';
 
                   let seatClass = 'flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition md:h-10 md:w-10';
-                  
+
                   if (isBooked) {
                     seatClass += ' cursor-not-allowed border border-zinc-300 bg-zinc-200 text-zinc-500';
                   } else if (isHolding) {
-                    seatClass += ' cursor-not-allowed border border-orange-300 bg-orange-100 text-orange-700';
+                    seatClass += ' cursor-not-allowed border border-orange-600 bg-orange-500 text-white';
                   } else if (isInactive) {
                     seatClass += ' cursor-not-allowed border border-zinc-300 bg-zinc-200 text-zinc-500';
                   } else if (isSelected) {
@@ -276,7 +276,7 @@ export default function BookingSeat() {
             <span>Đang chọn</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-5 w-5 rounded border border-orange-300 bg-orange-100"></div>
+            <div className="h-5 w-5 rounded border border-orange-600 bg-orange-500"></div>
             <span>Đang giữ chỗ</span>
           </div>
           <div className="flex items-center gap-2">
@@ -284,12 +284,7 @@ export default function BookingSeat() {
             <span>Đã đặt</span>
           </div>
         </div>
-        <p className="mt-3 text-xs text-zinc-500">
-          Ghế couple là ghế đôi dành cho 2 người, hiển thị dạng ô dài trên sơ đồ ghế.
-        </p>
-        <p className="mt-1 text-xs text-zinc-500">
-          Ghế màu cam là ghế đang được người khác giữ tạm thời trong quá trình thanh toán.
-        </p>
+
         {error && (
           <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {error}
@@ -298,65 +293,65 @@ export default function BookingSeat() {
       </section>
 
       <aside className="card-soft h-fit p-6 lg:sticky lg:top-24">
-          {film && (
-            <div className="mb-5 flex gap-4 border-b border-zinc-200 pb-5">
-              <img src={film.thumnbnail_url} alt="Thumbnail" className="w-20 rounded-md border border-zinc-200" />
-              <div>
-                <h3 className="text-lg font-black leading-tight text-zinc-900">{film.filmName}</h3>
-                <p className="mt-1 text-xs text-zinc-500">{film.durationMinutes} phút</p>
-                {film.ageRating && (
-                  <span className="mt-2 inline-block rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700">
-                    {film.ageRating}
+        {film && (
+          <div className="mb-5 flex gap-4 border-b border-zinc-200 pb-5">
+            <img src={film.thumnbnail_url} alt="Thumbnail" className="w-20 rounded-md border border-zinc-200" />
+            <div>
+              <h3 className="text-lg font-black leading-tight text-zinc-900">{film.filmName}</h3>
+              <p className="mt-1 text-xs text-zinc-500">{film.durationMinutes} phút</p>
+              {film.ageRating && (
+                <span className="mt-2 inline-block rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700">
+                  {film.ageRating}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="mb-6 space-y-3 text-sm">
+          <div className="flex justify-between">
+            <span className="text-zinc-500">Phòng</span>
+            <span className="text-right font-semibold text-zinc-900">{room?.name || 'Đang cập nhật'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-zinc-500">Suất chiếu</span>
+            <span className="font-semibold text-zinc-900">
+              {showtime?.startTime ? format(parseISO(showtime.startTime), 'HH:mm - dd/MM/yyyy') : ''}
+            </span>
+          </div>
+          <div className="flex justify-between items-start">
+            <span className="text-zinc-500">Ghế chọn</span>
+            <div className="flex gap-1 flex-wrap justify-end max-w-[60%]">
+              {selectedSeats.length === 0 ? (
+                <span className="text-zinc-500">Chưa chọn ghế</span>
+              ) : (
+                selectedSeats.map(s => (
+                  <span key={s.seatId} className="block rounded bg-red-50 px-2 py-1 font-semibold text-red-700">
+                    {s.seatCode}
                   </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="mb-6 space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-zinc-500">Phòng</span>
-              <span className="text-right font-semibold text-zinc-900">{room?.name || 'Đang cập nhật'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-500">Suất chiếu</span>
-              <span className="font-semibold text-zinc-900">
-                {showtime?.startTime ? format(parseISO(showtime.startTime), 'HH:mm - dd/MM/yyyy') : ''}
-              </span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-zinc-500">Ghế chọn</span>
-              <div className="flex gap-1 flex-wrap justify-end max-w-[60%]">
-                {selectedSeats.length === 0 ? (
-                  <span className="text-zinc-500">Chưa chọn ghế</span>
-                ) : (
-                  selectedSeats.map(s => (
-                    <span key={s.seatId} className="block rounded bg-red-50 px-2 py-1 font-semibold text-red-700">
-                      {s.seatCode}
-                    </span>
-                  ))
-                )}
-              </div>
+                ))
+              )}
             </div>
           </div>
+        </div>
 
-          <div className="mb-6 border-t border-zinc-200 pt-5">
-            <div className="flex justify-between items-end">
-              <span className="text-zinc-500">Tổng tiền</span>
-              <span className="text-3xl font-black text-red-700">
-                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(calculateTotal())}
-              </span>
-            </div>
+        <div className="mb-6 border-t border-zinc-200 pt-5">
+          <div className="flex justify-between items-end">
+            <span className="text-zinc-500">Tổng tiền</span>
+            <span className="text-3xl font-black text-red-700">
+              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(calculateTotal())}
+            </span>
           </div>
+        </div>
 
-          <button
-            onClick={handleCheckout}
-            disabled={selectedSeats.length === 0}
-            className="btn-primary w-full"
-          >
-            <ShoppingCartIcon className="h-5 w-5" />
-            Tiếp tục thanh toán
-          </button>
+        <button
+          onClick={handleCheckout}
+          disabled={selectedSeats.length === 0}
+          className="btn-primary w-full"
+        >
+          <ShoppingCartIcon className="h-5 w-5" />
+          Tiếp tục thanh toán
+        </button>
       </aside>
     </div>
   );

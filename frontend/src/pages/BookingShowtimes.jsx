@@ -8,12 +8,12 @@ import { CalendarDaysIcon, MapPinIcon } from '@heroicons/react/24/outline';
 export default function BookingShowtimes() {
   const { filmId } = useParams();
   const navigate = useNavigate();
-  
+
   const [film, setFilm] = useState(null);
   const [showtimes, setShowtimes] = useState([]);
   const [branches, setBranches] = useState([]);
   const [rooms, setRooms] = useState([]);
-  
+
   const [loading, setLoading] = useState(true);
   const [showtimeLoading, setShowtimeLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,7 +38,7 @@ export default function BookingShowtimes() {
           axiosClient.get(`/branch`).catch(() => []),
           axiosClient.get(`/room`).catch(() => [])
         ]);
-        
+
         setFilm(filmRes);
         setBranches(branchRes || []);
         setRooms(roomRes || []);
@@ -48,7 +48,7 @@ export default function BookingShowtimes() {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [filmId]);
 
@@ -139,24 +139,23 @@ export default function BookingShowtimes() {
           Chọn ngày chiếu
         </h2>
         <div className="hide-scrollbar flex gap-3 overflow-x-auto pb-2">
-        {dates.map((date, idx) => {
-          const isSelected = isSameDay(date, selectedDate);
-          return (
-            <button
-              key={idx}
-              onClick={() => setSelectedDate(date)}
-              className={`flex h-24 w-20 flex-shrink-0 flex-col items-center justify-center rounded-xl border transition ${
-                isSelected 
-                  ? 'border-red-600 bg-red-600 text-white' 
+          {dates.map((date, idx) => {
+            const isSelected = isSameDay(date, selectedDate);
+            return (
+              <button
+                key={idx}
+                onClick={() => setSelectedDate(date)}
+                className={`flex h-24 w-20 flex-shrink-0 flex-col items-center justify-center rounded-xl border transition ${isSelected
+                  ? 'border-red-600 bg-red-600 text-white'
                   : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400'
-              }`}
-            >
-              <span className="text-xs">{idx === 0 ? 'Hôm nay' : format(date, 'EEE', { locale: vi })}</span>
-              <span className="text-2xl font-bold mt-1">{format(date, 'dd')}</span>
-              <span className="text-xs">{format(date, 'MM/yyyy')}</span>
-            </button>
-          );
-        })}
+                  }`}
+              >
+                <span className="text-xs">{idx === 0 ? 'Hôm nay' : format(date, 'EEE', { locale: vi })}</span>
+                <span className="text-2xl font-bold mt-1">{format(date, 'dd')}</span>
+                <span className="text-xs">{format(date, 'MM/yyyy')}</span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -170,11 +169,10 @@ export default function BookingShowtimes() {
             <button
               key={branch.branchId}
               onClick={() => setSelectedBranchId(branch.branchId)}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                selectedBranchId === branch.branchId
-                  ? 'border-red-600 bg-red-600 text-white'
-                  : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400'
-              }`}
+              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${selectedBranchId === branch.branchId
+                ? 'border-red-600 bg-red-600 text-white'
+                : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400'
+                }`}
             >
               {branch.name}
             </button>
@@ -187,56 +185,53 @@ export default function BookingShowtimes() {
           <MapPinIcon className="h-6 w-6 text-red-600" />
           Suất chiếu
         </h2>
-      
-      {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {error}
-        </div>
-      )}
 
-      {!selectedBranchId ? (
-        <div className="card-soft p-12 text-center text-zinc-600">
-          Hiện chưa có rạp để hiển thị suất chiếu.
-        </div>
-      ) : showtimeLoading ? (
-        <div className="card-soft flex min-h-[200px] items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div>
-        </div>
-      ) : filteredShowtimes.length === 0 ? (
-        <div className="card-soft p-12 text-center text-zinc-600">
-          Không có suất chiếu vào ngày này. Vui lòng thử ngày khác.
-        </div>
-      ) : (
-        <div className="card-soft overflow-hidden">
-          <div className="border-b border-zinc-200 bg-zinc-50 p-4">
-            <h3 className="text-lg font-black text-zinc-900">{selectedBranch?.name || 'Rạp đã chọn'}</h3>
-            <p className="mt-1 text-sm text-zinc-600">{selectedBranch?.address || 'Đang cập nhật địa chỉ'}</p>
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
           </div>
-          <div className="p-6">
-            <div className="flex flex-wrap gap-4">
-              {filteredShowtimes
-                .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-                .map((st) => {
-                  const room = getRoomById(st.roomId);
-                  return (
-                    <button
-                      key={st.showtimeId}
-                      onClick={() => navigate(`/booking/seat/${st.showtimeId}`)}
-                      className="group flex flex-col items-center rounded-lg border border-zinc-200 bg-white p-3 transition hover:border-red-500 hover:bg-red-50"
-                    >
-                      <span className="text-xl font-black text-zinc-900 transition group-hover:text-red-700">
-                        {format(parseISO(st.startTime), 'HH:mm')}
-                      </span>
-                      <span className="mt-1 text-xs text-zinc-500">
-                        {room ? room.name : 'Phòng chiếu'}
-                      </span>
-                    </button>
-                  );
-                })}
+        )}
+
+        {!selectedBranchId ? (
+          <div className="card-soft p-12 text-center text-zinc-600">
+            Hiện chưa có rạp để hiển thị suất chiếu.
+          </div>
+        ) : showtimeLoading ? (
+          <div className="card-soft flex min-h-[200px] items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-red-600"></div>
+          </div>
+        ) : filteredShowtimes.length === 0 ? (
+          <div className="card-soft p-12 text-center text-zinc-600">
+            Không có suất chiếu vào ngày này. Vui lòng thử ngày khác.
+          </div>
+        ) : (
+          <div className="card-soft overflow-hidden">
+
+            <div className="p-6">
+              <div className="flex flex-wrap gap-4">
+                {filteredShowtimes
+                  .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+                  .map((st) => {
+                    const room = getRoomById(st.roomId);
+                    return (
+                      <button
+                        key={st.showtimeId}
+                        onClick={() => navigate(`/booking/seat/${st.showtimeId}`)}
+                        className="group flex flex-col items-center rounded-lg border border-zinc-200 bg-white p-3 transition hover:border-red-500 hover:bg-red-50"
+                      >
+                        <span className="text-xl font-black text-zinc-900 transition group-hover:text-red-700">
+                          {format(parseISO(st.startTime), 'HH:mm')}
+                        </span>
+                        <span className="mt-1 text-xs text-zinc-500">
+                          {room ? room.name : 'Phòng chiếu'}
+                        </span>
+                      </button>
+                    );
+                  })}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </section>
     </div>
   );

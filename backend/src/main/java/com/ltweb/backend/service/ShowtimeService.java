@@ -43,7 +43,8 @@ public class ShowtimeService {
         Film film = filmRepository.findById(request.getFilmId())
                 .orElseThrow(() -> new AppException(ErrorCode.FILM_NOT_FOUND));
 
-        if (showtimeRepository.existsOverlappingShowtime(request.getRoomId(), request.getStartTime(), request.getEndTime())) {
+        if (showtimeRepository.existsOverlappingShowtime(request.getRoomId(), request.getStartTime(),
+                request.getEndTime())) {
             throw new AppException(ErrorCode.SHOWTIME_TIME_OVERLAP);
         }
 
@@ -64,6 +65,7 @@ public class ShowtimeService {
                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
 
         showtimeMapper.updateShowtime(showtime, request);
+        showtime = showtimeRepository.save(showtime);
 
         return showtimeMapper.toResponse(showtime);
     }
