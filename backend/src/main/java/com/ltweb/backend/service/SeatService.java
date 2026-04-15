@@ -50,7 +50,8 @@ public class SeatService {
         Seat seat = seatRepository.findById(seatId)
                 .orElseThrow(() -> new RuntimeException("Seat not found"));
 
-        seatMapper.updateSeat(seat,request);
+        seatMapper.updateSeat(seat, request);
+        seatRepository.save(seat);
 
         return seatMapper.toSeatResponse(seat);
     }

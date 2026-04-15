@@ -170,6 +170,7 @@ export default function AdminBookings() {
                       ) : (
                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
                           b.status === 'COMPLETED' ? 'bg-green-500/10 text-green-600' :
+                          b.status === 'EXPIRED' ? 'bg-zinc-500/10 text-zinc-600' :
                           b.status === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
                           'bg-amber-500/10 text-amber-500'
                         }`}>{b.status}</span>

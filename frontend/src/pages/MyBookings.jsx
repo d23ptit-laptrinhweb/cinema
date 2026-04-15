@@ -87,7 +87,12 @@ export default function MyBookings() {
                       <h4 className="mt-1 text-xl font-black text-zinc-900">Giao dịch vé phim</h4>
                     </div>
 
-                    <span className="rounded border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-bold text-amber-700">{booking.status}</span>
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                      booking.status === 'COMPLETED' ? 'bg-green-500/10 text-green-600' :
+                      booking.status === 'EXPIRED'   ? 'bg-zinc-500/10 text-zinc-600' :
+                      booking.status === 'CANCELLED' ? 'bg-red-500/10 text-red-500' :
+                      'bg-amber-500/10 text-amber-500'
+                    }`}>{booking.status}</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-y-2 text-sm">
