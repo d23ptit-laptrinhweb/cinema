@@ -30,7 +30,7 @@ export default function PaymentReturn() {
           transactionNo: result.vnp_TransactionNo || searchParams.get('vnp_TransactionNo') || '',
           amount: result.vnp_Amount || searchParams.get('vnp_Amount') || '',
         });
-        
+
         if (success) {
           setStatus('success');
           setMessage('Thanh toán thành công. Đơn đặt vé của bạn đang được cập nhật.');
@@ -67,7 +67,7 @@ export default function PaymentReturn() {
             </div>
 
             <div className="flex gap-4">
-              <Link to="/profile" className="btn-outline">
+              <Link to="/my-bookings" className="btn-outline">
                 Xem vé đã đặt
               </Link>
               <Link to="/" className="btn-primary">
@@ -80,7 +80,7 @@ export default function PaymentReturn() {
             <XCircleIcon className="mb-6 h-24 w-24 text-red-600" />
             <h2 className="mb-2 text-3xl font-black text-zinc-900">Giao dịch thất bại</h2>
             <p className="mb-8 text-zinc-600">{message}</p>
-            
+
             <div className="flex gap-4">
               <Link to="/" className="btn-outline">
                 Về trang chủ
